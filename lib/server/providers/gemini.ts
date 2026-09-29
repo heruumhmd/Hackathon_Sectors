@@ -163,7 +163,12 @@ export async function analyzeNewsImpact(
   fetchFn: typeof fetch = fetch,
 ): Promise<NewsImpactInput> {
   const key = apiKey?.trim() || process.env.GEMINI_API_KEY?.trim()
-  const model = modelName?.trim() || process.env.GEMINI_MODEL?.trim() || 'gemini-3.5-flash-lite'
+  const rawModel = modelName?.trim() || process.env.GEMINI_MODEL?.trim() || 'gemini-3.5-flash-lite'
+  const model =
+    rawModel
+      .replace(/^GEMINI_MODEL=/, '')
+      .replace(/^["']|["']$/g, '')
+      .trim() || 'gemini-3.5-flash-lite'
 
   if (!key || key === 'your_gemini_api_key_here') {
     return fallbackAnalyzeNews(title, body)

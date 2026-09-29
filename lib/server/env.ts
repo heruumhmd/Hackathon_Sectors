@@ -31,7 +31,11 @@ export const ServerEnvSchema = z
     TEST_DATABASE_URL: z.string().trim().optional(),
     SECTORS_API_KEY: z.string().trim().optional(),
     GEMINI_API_KEY: z.string().trim().optional(),
-    GEMINI_MODEL: z.string().trim().default('gemini-3.5-flash-lite'),
+    GEMINI_MODEL: z
+      .string()
+      .trim()
+      .transform((v) => v.replace(/^GEMINI_MODEL=/, '').replace(/^["']|["']$/g, '').trim())
+      .default('gemini-3.5-flash-lite'),
     BETTER_AUTH_SECRET: z
       .string()
       .trim()

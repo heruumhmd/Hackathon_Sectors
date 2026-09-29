@@ -318,9 +318,14 @@ export async function sendMessage(
 
     // 6. Invoke Gemini or fallback
     const key = process.env.GEMINI_API_KEY?.trim()
-    const primaryModel = process.env.GEMINI_MODEL?.trim() || 'gemini-3.5-flash-lite'
+    const rawModel = process.env.GEMINI_MODEL?.trim() || 'gemini-3.5-flash-lite'
+    const primaryModel =
+      rawModel
+        .replace(/^GEMINI_MODEL=/, '')
+        .replace(/^["']|["']$/g, '')
+        .trim() || 'gemini-3.5-flash-lite'
     const candidateModels = Array.from(
-      new Set([primaryModel, 'gemini-flash-lite-latest', 'gemini-3.1-flash-lite']),
+      new Set([primaryModel, 'gemini-3.5-flash-lite', 'gemini-3-flash-preview', 'gemini-flash-lite-latest', 'gemini-3.1-flash-lite']),
     )
 
     let answer = ''
@@ -402,9 +407,11 @@ Keluarkan respons dalam format JSON dengan properti:
                 break
               }
             }
+          } else {
+            console.warn(`[Assistant] Gemini model ${modelToUse} returned status ${res.status}`)
           }
-        } catch {
-          // Try next candidate model
+        } catch (err) {
+          console.warn(`[Assistant] Failed request for model ${modelToUse}:`, err instanceof Error ? err.message : err)
         }
       }
     }
