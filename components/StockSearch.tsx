@@ -217,7 +217,7 @@ export function StockSearch() {
                 if (suggestions.length > 0 || status === 'empty' || !query.trim()) setIsOpen(true)
               }}
               placeholder="Cari kode atau nama perusahaan (contoh: TLKM, BBCA, atau Telkom)"
-              className="min-h-[44px] w-full rounded-lg border border-[var(--rasi-border)] bg-[var(--rasi-surface)] px-4 py-2 text-sm text-[var(--rasi-text)] transition-colors outline-none placeholder:text-[var(--rasi-muted)] focus:border-[var(--rasi-primary)] focus:ring-2 focus:ring-[var(--rasi-primary)]"
+              className="min-h-[44px] w-full rounded-lg border border-[var(--rasi-border)] bg-[var(--rasi-surface)] px-4 py-2 text-sm text-[var(--rasi-text)] transition-colors outline-none focus:outline-none focus-visible:outline-none placeholder:text-[var(--rasi-muted)] focus:border-[var(--rasi-primary)]"
             />
           </div>
           <Button type="submit" variant="primary" size="md" icon={Search} disabled={!query.trim()}>

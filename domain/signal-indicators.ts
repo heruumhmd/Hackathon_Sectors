@@ -1,6 +1,7 @@
 import type {
   IntradayBar,
   SignalAssessment,
+  SignalRecommendation,
   StopScenarioStatus,
   TechnicalConditionAssessment,
 } from '../lib/contracts/signal-analysis.ts'
@@ -148,8 +149,9 @@ export function assessSignalConditions(params: {
   rvol: number | null
   stopLoss: number
   barsSinceSignal: IntradayBar[]
+  historicalCloses?: number[]
 }): SignalAssessment {
-  const { currentPrice, referencePrice, vwap, ema20, rvol, stopLoss, barsSinceSignal } = params
+  const { currentPrice, referencePrice, vwap, ema20, rvol, stopLoss, barsSinceSignal, historicalCloses } = params
 
   const isAboveVwap = vwap !== null ? currentPrice >= vwap : null
   const isAboveEma20 = ema20 !== null ? currentPrice >= ema20 : null
@@ -164,13 +166,119 @@ export function assessSignalConditions(params: {
     rvolLogReturnScore = Number((rvol * logReturn).toFixed(4))
   }
 
+  // 1. Calculate consecutive drops
+  let consecutiveDrops = 0
+  if (historicalCloses && historicalCloses.length >= 2) {
+    for (let i = historicalCloses.length - 1; i > 0; i--) {
+      if (historicalCloses[i] < historicalCloses[i - 1]) {
+        consecutiveDrops++
+      } else {
+        break
+      }
+    }
+  } else if (barsSinceSignal.length >= 2) {
+    for (let i = barsSinceSignal.length - 1; i > 0; i--) {
+      if (barsSinceSignal[i].close < barsSinceSignal[i - 1].close) {
+        consecutiveDrops++
+      } else {
+        break
+      }
+    }
+  } else if (currentPrice < referencePrice) {
+    consecutiveDrops = 1
+  }
+
+  // 2. Calculate Rasi Score (0 - 100)
+  // Pillar 1: Trend & Price Action (30 points)
+  let trendScore = 0
+  if (isAboveEma20 === true) trendScore += 15
+  if (currentPrice > referencePrice) trendScore += 15
+  else if (currentPrice === referencePrice) trendScore += 7
+
+  // Pillar 2: Volume & Orderflow (25 points)
+  let volumeScore = 5
+  if (rvol !== null) {
+    if (rvol >= 1.2 && currentPrice >= referencePrice) volumeScore = 25
+    else if (rvol >= 1.0) volumeScore = 18
+    else if (rvol >= 0.7) volumeScore = 12
+    else volumeScore = 5
+  } else if (currentPrice >= referencePrice) {
+    volumeScore = 15
+  }
+
+  // Pillar 3: VWAP & Intraday Position (25 points)
+  let vwapScore = 0
+  if (isAboveVwap === true) {
+    vwapScore = 15
+    if (vwap !== null && currentPrice >= vwap * 1.01) {
+      vwapScore += 10
+    } else {
+      vwapScore += 5
+    }
+  } else if (vwap !== null && currentPrice >= vwap * 0.99) {
+    vwapScore = 8
+  }
+
+  // Pillar 4: Stop Integrity / Risk (20 points)
+  let riskScore = 0
+  if (stopCheck.status === 'UNTRIGGERED') {
+    riskScore = 20
+  }
+
+  let calculatedScore = trendScore + volumeScore + vwapScore + riskScore
+
+  // Penalty for consecutive drops
+  if (consecutiveDrops === 1) {
+    calculatedScore -= 15
+  } else if (consecutiveDrops === 2) {
+    calculatedScore -= 40
+  } else if (consecutiveDrops >= 3) {
+    calculatedScore -= 60
+  }
+
+  // Cap score when critical risks are triggered
+  if (stopCheck.status === 'SL_TRIGGERED') {
+    calculatedScore = Math.min(calculatedScore, 20)
+    if (consecutiveDrops >= 2) {
+      calculatedScore = Math.min(calculatedScore, 10)
+    }
+  } else if (consecutiveDrops >= 2) {
+    calculatedScore = Math.min(calculatedScore, 25)
+  }
+
+  const rasiScore = Math.max(0, Math.min(100, Math.round(calculatedScore)))
+
+  // 3. Recommendation & Warning Himbauan
+  let recommendation: SignalRecommendation = 'HOLD'
+  let recommendationLabel = 'WAIT AND SEE (NETRAL)'
+
+  if (rasiScore >= 85) {
+    recommendation = 'STRONG_BUY'
+    recommendationLabel = '✓ AKUMULASI KUAT (SANGAT BAGUS)'
+  } else if (rasiScore >= 65) {
+    recommendation = 'BUY'
+    recommendationLabel = 'BUY ON WEAKNESS'
+  } else if (rasiScore >= 40 && consecutiveDrops < 2 && stopCheck.status !== 'SL_TRIGGERED') {
+    recommendation = 'HOLD'
+    recommendationLabel = 'WAIT AND SEE (KONSOLIDASI)'
+  } else if (consecutiveDrops >= 2 || rasiScore <= 25 || stopCheck.status === 'SL_TRIGGERED') {
+    recommendation = 'STRONG_AVOID'
+    recommendationLabel = '⛔ HIMBAUAN: JANGAN BELI (PISAU JATUH)'
+  } else {
+    recommendation = 'AVOID'
+    recommendationLabel = 'HINDARI (TREN MELEMAH)'
+  }
+
   // Determine condition
   let condition: TechnicalConditionAssessment = 'NEUTRAL'
   let summary = ''
 
   if (stopCheck.status === 'SL_TRIGGERED') {
     condition = 'BEARISH'
-    summary = `Batas risiko terpicu: harga menyentuh level Stop Loss Rp ${stopLoss.toLocaleString('id-ID')}.`
+    summary = `Batas risiko terpicu: harga menyentuh level Stop Loss Rp ${stopLoss.toLocaleString('id-ID')}. Himbauan: JANGAN BELI.`
+  } else if (consecutiveDrops >= 2) {
+    condition = 'STRONG_BEARISH'
+    summary = `Terdeteksi penurunan ${consecutiveDrops} periode berturut-turut. Kondisi teknikal sangat berisiko. Himbauan: JANGAN BELI (Pisau Jatuh).`
   } else {
     let bullishSignals = 0
     let bearishSignals = 0
@@ -212,5 +320,9 @@ export function assessSignalConditions(params: {
     rvolLogReturnScore,
     stopStatus: stopCheck.status,
     stopTriggeredAt: stopCheck.triggeredAt,
+    rasiScore,
+    consecutiveDrops,
+    recommendation,
+    recommendationLabel,
   }
 }

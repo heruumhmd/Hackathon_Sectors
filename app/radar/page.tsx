@@ -1,12 +1,15 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 
 import {
   AlertTriangle,
   ArrowLeft,
+  ArrowRight,
+  ChevronRight,
   Clock,
   ExternalLink,
   Eye,
@@ -27,6 +30,7 @@ import {
 } from '@/app/actions'
 import { RadarEvidenceCases } from '@/components/RadarEvidenceCases'
 import { StockPreviewDialog } from '@/components/StockPreviewDialog'
+import { ResearchJourneyStepper } from '@/components/ResearchJourneyStepper'
 import { Button } from '@/components/ui'
 import { visibleRadarHistory } from '@/domain/radar'
 import { getNewsSentimentLabel } from '@/lib/presentation/stock'
@@ -54,11 +58,19 @@ function formatDate(isoString?: string): string {
   }
 }
 
-export default function RadarPage() {
+function RadarPageContent() {
+  const searchParams = useSearchParams()
+  const tickerParam = (searchParams.get('ticker') || searchParams.get('symbol') || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\.JK$/i, '')
+
   const [data, setData] = useState<MarketRadarData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState<'evidence' | 'radar' | 'history'>('evidence')
+  const [activeTab, setActiveTab] = useState<'evidence' | 'radar' | 'history'>(
+    tickerParam ? 'radar' : 'evidence',
+  )
 
   // History & snapshot state
   const [historyList, setHistoryList] = useState<RadarHistorySnapshot[]>([])
@@ -67,8 +79,16 @@ export default function RadarPage() {
   const requestId = useRef(0)
 
   // Search and filter state
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(tickerParam)
   const [filterType, setFilterType] = useState<'all' | 'sleeping' | 'insider'>('all')
+
+  // Sync search query when tickerParam changes
+  useEffect(() => {
+    if (tickerParam) {
+      setSearchQuery(tickerParam)
+      setActiveTab('radar')
+    }
+  }, [tickerParam])
 
   // Stock preview modal state
   const [previewTicker, setPreviewTicker] = useState<string | null>(null)
@@ -221,6 +241,9 @@ export default function RadarPage() {
 
   return (
     <div className="space-y-8 py-4">
+      {/* 0. Guided Research Stepper (Tahap 3 Aktif) */}
+      <ResearchJourneyStepper currentStep={3} ticker={tickerParam || 'BBCA'} />
+
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 border-b border-[var(--rasi-border)] pb-6 sm:flex-row sm:items-center">
         <div>
@@ -839,6 +862,36 @@ export default function RadarPage() {
         </section>
       )}
 
+      {/* Action Banner to Final Stage: Arahkan ke Asisten AI (Tahap 4 dari 4) */}
+      <div className="relative overflow-hidden rounded-2xl border border-[var(--rasi-primary)]/40 bg-gradient-to-r from-[var(--rasi-primary)]/10 via-[var(--surface-card)] to-[var(--rasi-accent)]/10 p-6 shadow-[var(--rasi-card-shadow)]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="space-y-1.5 max-w-xl">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--rasi-primary)]">
+              <span>Langkah Terakhir (Tahap 4 dari 4)</span>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </div>
+            <h3 className="text-base sm:text-lg font-bold text-[var(--rasi-text)]">
+              Arahkan ke Asisten AI RASI untuk Sintesis {tickerParam || 'Saham'}
+            </h3>
+            <p className="text-xs text-[var(--rasi-muted)] leading-relaxed">
+              Kompilasikan seluruh hasil evaluasi sinyal intraday, kalkulasi risiko, peta akumulasi broker, dan katalis radar pasar dalam satu analisis komprehensif bersama Asisten AI Gemini.
+            </p>
+          </div>
+
+          <div className="shrink-0">
+            <Link
+              href={`/asisten?symbol=${tickerParam || 'BBCA'}&flow=discover&prompt=${encodeURIComponent(
+                `Tolong berikan kesimpulan sintesis untuk saham ${tickerParam || 'BBCA'}: evaluasi sinyal sesi intraday, rencana risiko stop loss/take profit, peta akumulasi broker, dan pantauan radar pasar.`
+              )}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--rasi-primary)] px-5 py-3 text-sm font-bold text-[var(--rasi-primary-text)] shadow-md hover:opacity-90 active:scale-95 transition-all"
+            >
+              <span>Arahkan ke Asisten AI ({tickerParam || 'BBCA'})</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* Stock Preview Dialog */}
       <StockPreviewDialog
         ticker={previewTicker}
@@ -846,5 +899,19 @@ export default function RadarPage() {
         onClose={() => setPreviewOpen(false)}
       />
     </div>
+  )
+}
+
+export default function RadarPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="py-16 text-center text-sm text-[var(--rasi-muted)]">
+          Memuat Radar Pasar…
+        </div>
+      }
+    >
+      <RadarPageContent />
+    </Suspense>
   )
 }

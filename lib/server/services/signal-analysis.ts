@@ -207,14 +207,18 @@ export async function evaluateSignalAnalysis(params: {
   })
 
   // 6. Calculate Technical Indicators & Conditions
-  // Daily closes for EMA-20
+  // Daily closes for EMA-20 and consecutive drop calculation
   let ema20: number | null = null
+  let dailyCloses: number[] = []
   try {
     const dailyEnvelope = await fetchDailyPrices(cleanTicker, undefined, 40)
     const dailyRows = dailyEnvelope.data ?? []
-    if (dailyRows.length >= 20) {
+    if (dailyRows.length > 0) {
       const sorted = [...dailyRows].sort((a, b) => a.date.localeCompare(b.date))
-      ema20 = calculateEMA20(sorted.map((r) => r.close))
+      dailyCloses = sorted.map((r) => r.close)
+      if (dailyCloses.length >= 20) {
+        ema20 = calculateEMA20(dailyCloses)
+      }
     }
   } catch {
     // Optional
@@ -236,6 +240,7 @@ export async function evaluateSignalAnalysis(params: {
     rvol,
     stopLoss: riskPlan.stopLoss,
     barsSinceSignal,
+    historicalCloses: dailyCloses,
   })
 
   // 7. Calibrate & Run Stochastic Projections

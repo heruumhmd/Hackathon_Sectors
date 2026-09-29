@@ -25,6 +25,7 @@ import {
   getStockData,
   getWatchlist,
 } from '@/app/actions'
+import { BrokerAccumulationTable } from '@/components/BrokerAccumulationTable'
 import { ResearchWorkspace } from '@/components/ResearchWorkspace'
 import { StockChart } from '@/components/StockChart'
 import { useThemePreference } from '@/components/ThemePreferenceProvider'
@@ -1087,57 +1088,58 @@ export default function StockDetail({ ticker, initialData }: StockDetailProps) {
           {/* TAB: BROKER */}
           {currentTab === 'broker' && (
             <div className="space-y-6">
-              <div>
-                <h3 className="text-base font-bold text-[var(--rasi-text)]">
-                  {' '}
-                  Transaksi broker dan investor asing{' '}
-                </h3>
-                <p className="mt-1 text-xs text-[var(--rasi-muted)]">
-                  {' '}
-                  Lihat porsi pembelian dan penjualan melalui broker terbesar pada hari bursa
-                  terakhir.{' '}
-                </p>
-              </div>
+              {/* Detailed Accumulation vs Distribution Comparison Table & Funnel Stepper */}
+              <BrokerAccumulationTable
+                ticker={symbol}
+                bandarmology={bandarmology}
+                brokerSummary={data.envelopes?.broker?.data}
+                brokerRegistry={data.envelopes?.registry?.data}
+                flow={searchParams.get('flow') === 'discover'}
+              />
 
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-xl border border-[var(--rasi-border)] bg-[var(--rasi-muted-bg)] p-4">
-                  <span className="block text-xs text-[var(--rasi-muted)]">
-                    {' '}
-                    Pola pembelian dan penjualan{' '}
-                  </span>
-                  <span className="mt-2 block text-xl font-bold">
-                    {getStatusLabel(bandarmology.status).label}
-                  </span>
-                  <span className="mt-1 block text-xs text-[var(--rasi-muted)]">
-                    {bandarmology.flowSummary || 'Arus transaksi broker seimbang.'}
-                  </span>
-                </div>
+              {/* High-level Bandarmology metric cards */}
+              <div className="pt-4 border-t border-[var(--border-subtle)] space-y-4">
+                <h4 className="text-xs font-bold text-[var(--rasi-muted)] uppercase tracking-wider">
+                  Ringkasan Konsentrasi & Arus Asing ({symbol})
+                </h4>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-xl border border-[var(--rasi-border)] bg-[var(--rasi-muted-bg)] p-4">
+                    <span className="block text-xs text-[var(--rasi-muted)]">
+                      Pola pembelian dan penjualan
+                    </span>
+                    <span className="mt-2 block text-xl font-bold">
+                      {getStatusLabel(bandarmology.status).label}
+                    </span>
+                    <span className="mt-1 block text-xs text-[var(--rasi-muted)]">
+                      {bandarmology.flowSummary || 'Arus transaksi broker seimbang.'}
+                    </span>
+                  </div>
 
-                <div className="rounded-xl border border-[var(--rasi-border)] bg-[var(--rasi-muted-bg)] p-4">
-                  <span className="block text-xs text-[var(--rasi-muted)]">
-                    {' '}
-                    Porsi beli 3 broker terbesar{' '}
-                  </span>
-                  <span className="mt-2 block font-mono text-xl font-bold tabular-nums">
-                    {bandarmology.cr3Buy !== null
-                      ? `${bandarmology.cr3Buy.toFixed(1)}%`
-                      : 'Data belum cukup'}
-                  </span>
-                  <span className="mt-1 block text-xs text-[var(--rasi-muted)]">
-                    Porsi dari total pembelian oleh 3 broker teratas
-                  </span>
-                </div>
+                  <div className="rounded-xl border border-[var(--rasi-border)] bg-[var(--rasi-muted-bg)] p-4">
+                    <span className="block text-xs text-[var(--rasi-muted)]">
+                      Porsi beli 3 broker terbesar
+                    </span>
+                    <span className="mt-2 block font-mono text-xl font-bold tabular-nums">
+                      {bandarmology.cr3Buy !== null
+                        ? `${bandarmology.cr3Buy.toFixed(1)}%`
+                        : 'Data belum cukup'}
+                    </span>
+                    <span className="mt-1 block text-xs text-[var(--rasi-muted)]">
+                      Porsi dari total pembelian oleh 3 broker teratas
+                    </span>
+                  </div>
 
-                <div className="rounded-xl border border-[var(--rasi-border)] bg-[var(--rasi-muted-bg)] p-4">
-                  <span className="block text-xs text-[var(--rasi-muted)]">
-                    Transaksi investor asing
-                  </span>
-                  <span className="mt-2 block text-xl font-bold">
-                    {getStatusLabel(bandarmology.foreignFlowStatus).label}
-                  </span>
-                  <span className="mt-1 block text-xs text-[var(--rasi-muted)]">
-                    {formatForeignFlow(bandarmology.netForeignVal)}
-                  </span>
+                  <div className="rounded-xl border border-[var(--rasi-border)] bg-[var(--rasi-muted-bg)] p-4">
+                    <span className="block text-xs text-[var(--rasi-muted)]">
+                      Transaksi investor asing
+                    </span>
+                    <span className="mt-2 block text-xl font-bold">
+                      {getStatusLabel(bandarmology.foreignFlowStatus).label}
+                    </span>
+                    <span className="mt-1 block text-xs text-[var(--rasi-muted)]">
+                      {formatForeignFlow(bandarmology.netForeignVal)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

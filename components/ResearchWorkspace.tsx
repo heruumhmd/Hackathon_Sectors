@@ -1,11 +1,14 @@
 'use client'
 
 import React, { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
 
 import {
   ArrowDownRight,
+  ArrowRight,
   ArrowUpRight,
   Check,
+  ChevronRight,
   Clock,
   Copy,
   FileText,
@@ -214,6 +217,7 @@ export function ResearchWorkspace({
 
   return (
     <div className="space-y-6">
+
       {/* 1. Thesis & Invalidation Triggers */}
       <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-6 shadow-[var(--rasi-card-shadow)]">
         <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4">
@@ -667,6 +671,34 @@ export function ResearchWorkspace({
           </div>
         </div>
       )}
+
+      {/* 4. Action Banner to Next Stage: Akumulasi Broker & Tabel Perbandingan (Tahap 2 dari 4) */}
+      <div className="relative overflow-hidden rounded-2xl border border-[var(--rasi-primary)]/40 bg-gradient-to-r from-[var(--rasi-primary)]/10 via-[var(--surface-card)] to-[var(--rasi-accent)]/10 p-6 shadow-[var(--rasi-card-shadow)] print:hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="space-y-1.5 max-w-xl">
+            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--rasi-primary)]">
+              <span>Langkah Selanjutnya (Tahap 2 dari 4)</span>
+              <ChevronRight className="h-3.5 w-3.5" />
+            </div>
+            <h3 className="text-base sm:text-lg font-bold text-[var(--rasi-text)]">
+              Periksa Siapa yang Mengakumulasi Saham {ticker}
+            </h3>
+            <p className="text-xs text-[var(--rasi-muted)] leading-relaxed">
+              Konfirmasi tesis investasi Anda dengan data riil transaksi broker. Buka tabel perbandingan akumulasi vs distribusi untuk melihat apakah broker institusi dan asing sedang menyerap barang.
+            </p>
+          </div>
+
+          <div className="shrink-0">
+            <Link
+              href={`/saham/${ticker}?tab=broker&flow=discover`}
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--rasi-primary)] px-5 py-3 text-sm font-bold text-[var(--rasi-primary-text)] shadow-md hover:opacity-90 active:scale-95 transition-all"
+            >
+              <span>Cek Akumulasi Broker ({ticker})</span>
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

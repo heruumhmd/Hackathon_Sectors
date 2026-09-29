@@ -205,7 +205,7 @@ export function StockSearchCombobox({
           autoFocus={autoFocus}
           autoComplete="off"
           spellCheck={false}
-          className={`w-full rounded-lg border border-[var(--rasi-border)] bg-[var(--rasi-surface)] font-mono text-[var(--rasi-text)] uppercase transition-colors outline-none placeholder:font-sans placeholder:text-[var(--rasi-muted)]/70 placeholder:normal-case focus:border-[var(--rasi-primary)] focus:ring-2 focus:ring-[var(--rasi-primary)]/20 ${sizeClasses} ${inputClassName}`}
+          className={`w-full rounded-lg border border-[var(--rasi-border)] bg-[var(--rasi-surface)] font-mono text-[var(--rasi-text)] uppercase transition-colors outline-none placeholder:font-sans placeholder:text-[var(--rasi-muted)]/70 placeholder:normal-case focus:border-[var(--rasi-primary)] focus:outline-none focus-visible:outline-none ${sizeClasses} ${inputClassName}`}
         />
         {remoteLoading && (
           <div className="pointer-events-none absolute right-3">

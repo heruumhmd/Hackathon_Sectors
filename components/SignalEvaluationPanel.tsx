@@ -211,7 +211,7 @@ export function SignalEvaluationPanel({ ticker, companyName }: SignalEvaluationP
           </div>
 
           {/* 3. Summary Bar */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Technical Condition */}
             <div className="rounded-lg border border-[var(--rasi-border)] bg-[var(--surface-card)] p-3 space-y-1">
               <span className="text-[11px] font-semibold text-[var(--rasi-muted)]">
@@ -232,9 +232,11 @@ export function SignalEvaluationPanel({ ticker, companyName }: SignalEvaluationP
                     ? 'Sangat Kuat (Bullish)'
                     : report.assessment.condition === 'BULLISH'
                       ? 'Positif (Bullish)'
-                      : report.assessment.condition === 'BEARISH'
-                        ? 'Melemah (Bearish)'
-                        : 'Konsolidasi (Netral)'}
+                      : report.assessment.condition === 'STRONG_BEARISH'
+                        ? 'Sangat Lemah (Bearish Ekstrem)'
+                        : report.assessment.condition === 'BEARISH'
+                          ? 'Melemah (Bearish)'
+                          : 'Konsolidasi (Netral)'}
                 </span>
               </div>
               <p className="text-[10px] text-[var(--rasi-muted)] line-clamp-1">
@@ -300,7 +302,89 @@ export function SignalEvaluationPanel({ ticker, companyName }: SignalEvaluationP
                 SL awal: Rp {report.riskPlan.stopLoss.toLocaleString('id-ID')}
               </p>
             </div>
+
+            {/* Skor Rasio Rasi & Rekomendasi */}
+            <div className="rounded-lg border border-[var(--rasi-border)] bg-[var(--surface-card)] p-3 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[var(--rasi-muted)]">
+                  Skor Rasio Rasi:
+                </span>
+                <span
+                  className={`font-mono text-xs font-bold ${
+                    (report.assessment.rasiScore ?? 50) >= 70
+                      ? 'text-emerald-500'
+                      : (report.assessment.rasiScore ?? 50) >= 40
+                        ? 'text-amber-500'
+                        : 'text-rose-500'
+                  }`}
+                >
+                  {report.assessment.rasiScore ?? 50} / 100
+                </span>
+              </div>
+
+              {/* Progress bar */}
+              <div className="h-1.5 w-full rounded-full bg-[var(--rasi-muted-bg)] overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    (report.assessment.rasiScore ?? 50) >= 70
+                      ? 'bg-emerald-500'
+                      : (report.assessment.rasiScore ?? 50) >= 40
+                        ? 'bg-amber-500'
+                        : 'bg-rose-500'
+                  }`}
+                  style={{
+                    width: `${Math.max(4, Math.min(100, report.assessment.rasiScore ?? 50))}%`,
+                  }}
+                />
+              </div>
+
+              {/* Recommendation badge */}
+              <div className="pt-0.5">
+                <span
+                  className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold border truncate max-w-full ${
+                    (report.assessment.rasiScore ?? 50) < 40 ||
+                    report.assessment.recommendation === 'STRONG_AVOID'
+                      ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                      : (report.assessment.rasiScore ?? 50) >= 70
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                        : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                  }`}
+                >
+                  {report.assessment.recommendationLabel ??
+                    ((report.assessment.rasiScore ?? 50) < 40
+                      ? '⛔ JANGAN BELI (PISAU JATUH)'
+                      : (report.assessment.rasiScore ?? 50) >= 70
+                        ? '✓ REKOMENDASI BELI'
+                        : 'WAIT AND SEE')}
+                </span>
+              </div>
+            </div>
           </div>
+
+          {/* Banner Peringatan Proteksi Modal jika Penurunan Berturut-turut / Skor Rendah */}
+          {((report.assessment.rasiScore !== undefined && report.assessment.rasiScore < 40) ||
+            report.assessment.recommendation === 'STRONG_AVOID' ||
+            (report.assessment.consecutiveDrops !== undefined && report.assessment.consecutiveDrops >= 2)) && (
+            <div className="rounded-lg border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300 flex items-start gap-2.5">
+              <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-rose-500" />
+              <div className="space-y-0.5">
+                <span className="font-bold text-rose-400">
+                  Himbauan Proteksi Modal (Sinyal Risiko Ekstrem):
+                </span>{' '}
+                {report.assessment.consecutiveDrops && report.assessment.consecutiveDrops >= 2 ? (
+                  <span>
+                    Terdeteksi penurunan harga <strong>{report.assessment.consecutiveDrops} periode berturut-turut</strong>. Himbauan sistem:{' '}
+                    <strong className="underline text-rose-200">JANGAN BELI (PISAU JATUH)</strong> sampai muncul volume serapan terkonfirmasi.
+                  </span>
+                ) : (
+                  <span>
+                    Skor rasio berada di level sangat rendah ({report.assessment.rasiScore ?? 0}/100). Himbauan sistem:{' '}
+                    <strong className="underline text-rose-200">JANGAN BELI</strong> untuk menghindari risiko likuiditas dan pelemahan lanjutan.
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* 4. Three Tabs */}
           <div className="space-y-4">

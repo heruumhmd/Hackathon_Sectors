@@ -288,8 +288,33 @@ dialog {
 }
 
 :focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--rasi-focus) 65%, transparent);
-  outline-offset: 2px;
+  outline: 2px solid var(--rasi-accent);
+  outline-offset: 1px;
+}
+
+/* Hilangkan kotak/outline biru melayang pada form controls dan buttons */
+input,
+textarea,
+select,
+button,
+[role="button"] {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+select:focus,
+select:focus-visible,
+button:focus,
+button:focus-visible,
+[role="button"]:focus,
+[role="button"]:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -440,4 +465,118 @@ dialog {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ──────────────────────────────────────────────────────────────────
+   RASI 3D CELESTIAL-FINTECH ANIMATIONS
+   ────────────────────────────────────────────────────────────────── */
+@keyframes rasi-float-3d {
+  0%, 100% {
+    transform: perspective(600px) rotateX(0deg) rotateY(0deg) translateY(0);
+  }
+  50% {
+    transform: perspective(600px) rotateX(5deg) rotateY(-5deg) translateY(-2px);
+  }
+}
+
+.animate-rasi-3d-float {
+  animation: rasi-float-3d 5s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Celestial Cling / Twinkle Sparkle Animation ("Cling-Cling Galaksi") */
+@keyframes rasi-cling {
+  0%, 100% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    transform: scale(1.25) rotate(25deg);
+    opacity: 1;
+  }
+  40% {
+    transform: scale(0.95) rotate(45deg);
+    opacity: 0.85;
+  }
+  60% {
+    transform: scale(0.3) rotate(70deg);
+    opacity: 0.2;
+  }
+  70% {
+    transform: scale(0) rotate(90deg);
+    opacity: 0;
+  }
+}
+
+.animate-rasi-cling {
+  animation: rasi-cling 3.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+  will-change: transform, opacity;
+}
+
+.animate-rasi-cling-delay-1 {
+  animation-delay: 0.8s;
+}
+
+.animate-rasi-cling-delay-2 {
+  animation-delay: 1.6s;
+}
+
+.animate-rasi-cling-delay-3 {
+  animation-delay: 2.4s;
+}
+
+.animate-rasi-cling-delay-4 {
+  animation-delay: 1.2s;
+}
+
+.animate-rasi-cling-delay-5 {
+  animation-delay: 2.0s;
+}
+
+/* Gyroscopic Celestial Orbital Ring Rotations */
+@keyframes rasi-orbit-spin-cw {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes rasi-orbit-spin-ccw {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+
+@keyframes rasi-pulse-ring {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.22;
+  }
+}
+
+.animate-rasi-orbit-cw {
+  animation: rasi-orbit-spin-cw 24s linear infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+  will-change: transform;
+}
+
+.animate-rasi-orbit-ccw {
+  animation: rasi-orbit-spin-ccw 32s linear infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+  will-change: transform;
+}
+
+.animate-rasi-pulse-ring {
+  animation: rasi-pulse-ring 3.5s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+  will-change: transform, opacity;
+}
+
+
+
 

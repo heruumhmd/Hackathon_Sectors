@@ -339,7 +339,7 @@ test('checkStopScenarios detects stop loss violation accurately', () => {
   assert.equal(check.triggeredAt, '2026-09-21T02:05:00Z')
 })
 
-test('assessSignalConditions correctly synthesizes technical conditions', () => {
+test('assessSignalConditions correctly synthesizes technical conditions and Rasi score', () => {
   const assessment = assessSignalConditions({
     currentPrice: 4250,
     referencePrice: 4200,
@@ -348,10 +348,47 @@ test('assessSignalConditions correctly synthesizes technical conditions', () => 
     rvol: 1.5,
     stopLoss: 4100,
     barsSinceSignal: [],
+    historicalCloses: [4150, 4170, 4200, 4250],
   })
 
   assert.equal(assessment.condition, 'STRONG_BULLISH')
   assert.equal(assessment.isAboveVwap, true)
   assert.equal(assessment.isAboveEma20, true)
   assert.equal(assessment.stopStatus, 'UNTRIGGERED')
+  assert.equal(assessment.consecutiveDrops, 0)
+  assert.ok(assessment.rasiScore !== undefined && assessment.rasiScore >= 90)
+  assert.equal(assessment.recommendation, 'STRONG_BUY')
 })
+
+test('assessSignalConditions triggers JANGAN BELI (STRONG_AVOID) on consecutive drops (GOTO case)', () => {
+  // GOTO dropped from 50 -> 43 -> 37, SL breached at 40
+  const assessment = assessSignalConditions({
+    currentPrice: 37,
+    referencePrice: 50,
+    vwap: 38.2,
+    ema20: 48,
+    rvol: 0.8,
+    stopLoss: 40,
+    barsSinceSignal: [
+      {
+        ticker: 'GOTO',
+        startAt: '2026-09-29T02:00:00Z',
+        endAt: '2026-09-29T02:05:00Z',
+        open: 43,
+        high: 43,
+        low: 37, // breached 40
+        close: 37,
+        volume: 500000,
+        source: 'YAHOO',
+      },
+    ],
+    historicalCloses: [52, 50, 50, 43, 37], // 2 consecutive drops: 50 -> 43 -> 37
+  })
+
+  assert.equal(assessment.stopStatus, 'SL_TRIGGERED')
+  assert.ok(assessment.consecutiveDrops !== undefined && assessment.consecutiveDrops >= 2)
+  assert.ok(assessment.rasiScore !== undefined && assessment.rasiScore <= 20)
+  assert.equal(assessment.recommendation, 'STRONG_AVOID')
+  assert.ok(assessment.recommendationLabel?.includes('JANGAN BELI'))
+})
+

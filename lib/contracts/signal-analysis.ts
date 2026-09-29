@@ -73,6 +73,13 @@ export interface SignalOutcome {
   notes?: string
 }
 
+export type SignalRecommendation =
+  | 'STRONG_BUY'
+  | 'BUY'
+  | 'HOLD'
+  | 'AVOID'
+  | 'STRONG_AVOID'
+
 export interface SignalAssessment {
   condition: TechnicalConditionAssessment
   summary: string
@@ -84,6 +91,10 @@ export interface SignalAssessment {
   rvolLogReturnScore: number | null
   stopStatus: StopScenarioStatus
   stopTriggeredAt?: string | null
+  rasiScore?: number
+  consecutiveDrops?: number
+  recommendation?: SignalRecommendation
+  recommendationLabel?: string
 }
 
 export interface RiskPlan {

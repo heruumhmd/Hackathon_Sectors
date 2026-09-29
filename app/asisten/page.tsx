@@ -16,6 +16,7 @@ import {
   LogIn,
   Plus,
   Send,
+  Sparkles,
   Star,
   Trash2,
 } from 'lucide-react'
@@ -27,6 +28,7 @@ import {
   listConversationsAction,
 } from '@/app/actions'
 import { MarkdownContent } from '@/components/MarkdownContent'
+import { ResearchJourneyStepper } from '@/components/ResearchJourneyStepper'
 import { Button, ButtonLink, Dialog, IconButton } from '@/components/ui'
 import { authClient } from '@/lib/auth-client'
 import type { AssistantSourceRef, ConversationDTO, ProposedAction } from '@/lib/contracts/assistant'
@@ -50,15 +52,22 @@ function AssistantContent() {
     .toUpperCase()
     .replace(/\.JK$/i, '')
   const initialTicker = /^[A-Z]{4}$/.test(tickerParam) ? tickerParam : ''
+  const promptParam = searchParams.get('prompt') || ''
 
   const { data: session, isPending: sessionLoading } = authClient.useSession()
 
   const [ticker, setTicker] = useState(initialTicker)
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState(promptParam)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [conversationId, setConversationId] = useState<string | undefined>(undefined)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (promptParam) {
+      setInput(promptParam)
+    }
+  }, [promptParam])
 
   // Saved conversations modal
   const [convModalOpen, setConvModalOpen] = useState(false)
@@ -262,6 +271,39 @@ function AssistantContent() {
 
   return (
     <div className="space-y-6 py-4">
+      {/* 0. Guided Research Stepper (Tahap 4: Asisten AI RASI) */}
+      <ResearchJourneyStepper currentStep={4} ticker={ticker || 'BBCA'} />
+
+      {/* Synthesis Callout Banner if coming from research funnel */}
+      {promptParam && messages.length === 0 && (
+        <div className="rounded-2xl border border-[var(--rasi-primary)]/40 bg-gradient-to-r from-[var(--rasi-primary)]/15 via-[var(--surface-card)] to-[var(--rasi-accent)]/15 p-5 shadow-[var(--rasi-card-shadow)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--rasi-primary)]">
+              <Sparkles className="h-4 w-4" />
+              <span>Sintesis Riset Terpadu Siap Dijalankan</span>
+            </span>
+            <p className="text-xs text-[var(--rasi-text)] font-semibold">
+              Pertanyaan sintesis komprehensif untuk saham {ticker || 'terpilih'} telah disiapkan secara otomatis.
+            </p>
+            <p className="text-[11px] text-[var(--rasi-muted)]">
+              Klik tombol &quot;Kirim&quot; di bawah untuk meminta Asisten AI mensintesiskan Evaluasi Sinyal Intraday, Rencana Risiko, Peta Akumulasi Broker, dan Katalis Radar Pasar.
+            </p>
+          </div>
+          {session?.user && (
+            <Button
+              variant="primary"
+              size="sm"
+              icon={Send}
+              onClick={() => sendMessage(input)}
+              pending={loading}
+              pendingText="Menganalisis…"
+            >
+              Mulai Sintesis Sekarang
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Header bar */}
       <div className="flex flex-col justify-between gap-4 border-b border-[var(--rasi-border)] pb-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">

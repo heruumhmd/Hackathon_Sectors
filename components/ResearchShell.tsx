@@ -11,6 +11,7 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  Compass,
   GraduationCap,
   LogOut,
   Menu,
@@ -30,9 +31,10 @@ import { RasiInitialLoading } from '@/components/loading'
 const navLinks = [
   {
     href: '/',
-    label: 'Cari saham',
-    icon: TrendingUp,
-    isActive: (pathname: string) => pathname === '/' || pathname.startsWith('/saham'),
+    label: 'Discover',
+    icon: Compass,
+    isActive: (pathname: string) =>
+      pathname === '/' || pathname.startsWith('/discover') || pathname.startsWith('/saham'),
   },
   {
     href: '/radar',
