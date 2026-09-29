@@ -7,7 +7,7 @@ import Link from 'next/link'
 import {
   AlertTriangle,
   ArrowRight,
-  CheckCircle2,
+  Check,
   HelpCircle,
   RefreshCw,
   Search,
@@ -120,8 +120,14 @@ export function RadarEvidenceCases() {
           </p>
         </div>
 
-        <Button variant="secondary" size="sm" disabled={refreshing} onClick={() => loadScan(true)}>
-          <RefreshCw className={`mr-2 h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => loadScan(true)}
+          pending={refreshing}
+          pendingText="Memperbarui…"
+          icon={RefreshCw}
+        >
           Perbarui Pindaian
         </Button>
       </div>
@@ -205,14 +211,16 @@ export function RadarEvidenceCases() {
 
                 {/* Conflicting Evidence */}
                 {item.conflictingEvidence.length > 0 && (
-                  <div className="rasi-alert-danger mt-4 rounded-lg p-3">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold">
-                      <AlertTriangle className="h-3.5 w-3.5" />
+                  <div className="mt-4 rounded-lg bg-rose-600 p-3 text-white shadow-sm dark:bg-rose-700">
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+                      <AlertTriangle className="h-4 w-4 shrink-0 text-white" />
                       <span>Bukti Berlawanan Arah (Divergensi)</span>
                     </div>
-                    <ul className="mt-1.5 list-disc space-y-1 pl-4 text-xs opacity-90">
+                    <ul className="mt-1.5 list-disc space-y-1 pl-4 text-xs font-medium text-rose-100">
                       {item.conflictingEvidence.map((e, idx) => (
-                        <li key={idx}>{e}</li>
+                        <li key={idx} className="leading-relaxed">
+                          {e}
+                        </li>
                       ))}
                     </ul>
                   </div>
@@ -220,14 +228,18 @@ export function RadarEvidenceCases() {
 
                 {/* Aligned Evidence */}
                 {item.alignedEvidence.length > 0 && (
-                  <div className="mt-3 rounded-lg border border-[var(--rasi-success)]/30 bg-[var(--rasi-success)]/5 p-3">
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--rasi-success)]">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
+                  <div className="mt-3 rounded-lg border border-[var(--rasi-border)] bg-[var(--rasi-card)] p-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-[var(--rasi-text)]">
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-xs">
+                        <Check className="h-2.5 w-2.5 stroke-[3]" />
+                      </span>
                       <span>Bukti Searah</span>
                     </div>
-                    <ul className="mt-1.5 list-disc space-y-1 pl-4 text-xs text-[var(--rasi-success)]/90">
+                    <ul className="mt-1.5 list-disc space-y-1 pl-4 text-xs text-[var(--rasi-muted)]">
                       {item.alignedEvidence.map((e, idx) => (
-                        <li key={idx}>{e}</li>
+                        <li key={idx} className="leading-relaxed">
+                          {e}
+                        </li>
                       ))}
                     </ul>
                   </div>

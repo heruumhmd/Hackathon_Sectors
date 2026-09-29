@@ -166,7 +166,7 @@ export function BrokerActivityExplorer({
                     : 'bg-[var(--rasi-muted-bg)] text-[var(--rasi-muted)] hover:text-[var(--rasi-text)]'
                 }`}
               >
-                {d === '1' ? '1 Sesi' : d === '5' ? '5 Sesi' : '14 Hari (Maks)'}
+                {d === '1' ? '1 Hari' : d === '5' ? '5 Hari' : '14 Hari (Maks)'}
               </button>
             ))}
           </div>
@@ -346,7 +346,7 @@ export function BrokerActivityExplorer({
                   size="sm"
                   onClick={() => setRangeDays('5')}
                 >
-                  Pilih Periode 5 Sesi
+                  Pilih Periode 5 Hari
                 </Button>
                 <Button
                   variant="secondary"

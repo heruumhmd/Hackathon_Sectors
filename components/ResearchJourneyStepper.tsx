@@ -1,16 +1,10 @@
 'use client'
 
 import React from 'react'
+
 import Link from 'next/link'
-import {
-  TrendingUp,
-  FileText,
-  Building2,
-  Radar,
-  Sparkles,
-  ChevronRight,
-  CheckCircle2,
-} from 'lucide-react'
+
+import { Building2, Check, ChevronRight, FileText, Radar, Sparkles, TrendingUp } from 'lucide-react'
 
 export interface ResearchJourneyStepperProps {
   currentStep: 1 | 2 | 3 | 4
@@ -61,7 +55,7 @@ export function ResearchJourneyStepper({
   if (compact) {
     return (
       <div
-        className={`flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 text-xs ${className}`}
+        className={`no-scrollbar flex items-center gap-1.5 overflow-x-auto py-1 text-xs ${className}`}
       >
         {steps.map((s, idx) => {
           const isActive = s.num === currentStep
@@ -72,16 +66,18 @@ export function ResearchJourneyStepper({
             <React.Fragment key={s.num}>
               <Link
                 href={s.href}
-                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-medium whitespace-nowrap transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium whitespace-nowrap transition-colors ${
                   isActive
-                    ? 'bg-[var(--rasi-primary)] text-[var(--rasi-primary-text)] font-semibold shadow-xs'
+                    ? 'bg-[var(--rasi-primary)] font-semibold text-[var(--rasi-primary-text)] shadow-xs'
                     : isDone
-                      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20'
-                      : 'bg-[var(--surface-card)] text-[var(--rasi-muted)] border border-[var(--border-subtle)] hover:text-[var(--rasi-text)]'
+                      ? 'border border-[var(--border-subtle)] bg-[var(--surface-card)] text-[var(--rasi-text)] shadow-xs hover:border-[var(--rasi-border)]'
+                      : 'border border-[var(--border-subtle)] bg-[var(--surface-card)] text-[var(--rasi-muted)] hover:text-[var(--rasi-text)]'
                 }`}
               >
                 {isDone ? (
-                  <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+                  <span className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white dark:bg-emerald-600">
+                    <Check className="h-2 w-2 stroke-[3]" />
+                  </span>
                 ) : (
                   <Icon className="h-3 w-3 shrink-0" />
                 )}
@@ -90,7 +86,7 @@ export function ResearchJourneyStepper({
                 </span>
               </Link>
               {idx < steps.length - 1 && (
-                <ChevronRight className="h-3 w-3 text-[var(--rasi-muted)]/50 shrink-0" />
+                <ChevronRight className="h-3 w-3 shrink-0 text-[var(--rasi-muted)]/50" />
               )}
             </React.Fragment>
           )
@@ -101,22 +97,23 @@ export function ResearchJourneyStepper({
 
   return (
     <div
-      className={`rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)]/90 backdrop-blur-md p-4 sm:p-5 shadow-[var(--rasi-card-shadow)] ${className}`}
+      className={`rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)]/90 p-4 shadow-[var(--rasi-card-shadow)] backdrop-blur-md sm:p-5 ${className}`}
     >
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 border-b border-[var(--border-subtle)] pb-3">
+      <div className="mb-4 flex flex-col justify-between gap-3 border-b border-[var(--border-subtle)] pb-3 sm:flex-row sm:items-center">
         <div>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--rasi-primary)]">
+          <span className="text-[10px] font-bold tracking-wider text-[var(--rasi-primary)] uppercase">
             Alur Riset Terpadu RASI
           </span>
           <h4 className="text-sm font-bold text-[var(--rasi-text)]">
-            Panduan 4 Langkah Meneliti Saham <span className="font-mono text-[var(--rasi-primary)]">{cleanTicker}</span>
+            Panduan 4 Langkah Meneliti Saham{' '}
+            <span className="font-mono text-[var(--rasi-primary)]">{cleanTicker}</span>
           </h4>
         </div>
         <div className="flex items-center gap-2 text-xs text-[var(--rasi-muted)]">
           <span>
             Langkah <strong>{currentStep}</strong> dari <strong>4</strong>
           </span>
-          <div className="w-24 h-1.5 rounded-full bg-[var(--rasi-muted-bg)] overflow-hidden">
+          <div className="h-1.5 w-24 overflow-hidden rounded-full bg-[var(--rasi-muted-bg)]">
             <div
               className="h-full bg-gradient-to-r from-[var(--rasi-primary)] to-[var(--rasi-accent)] transition-all duration-300"
               style={{ width: `${(currentStep / 4) * 100}%` }}
@@ -125,7 +122,7 @@ export function ResearchJourneyStepper({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         {steps.map((s, idx) => {
           const isActive = s.num === currentStep
           const isDone = s.num < currentStep
@@ -135,50 +132,42 @@ export function ResearchJourneyStepper({
             <Link
               key={s.num}
               href={s.href}
-              className={`group relative flex flex-col p-3 rounded-xl border transition-all ${
+              className={`group relative flex flex-col rounded-xl border p-3 transition-all ${
                 isActive
                   ? 'border-[var(--rasi-primary)] bg-[var(--rasi-primary)]/10 shadow-sm ring-1 ring-[var(--rasi-primary)]/30'
-                  : isDone
-                    ? 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50'
-                    : 'border-[var(--border-subtle)] bg-[var(--surface-card)] hover:border-[var(--rasi-border)] hover:bg-[var(--rasi-muted-bg)]/40'
+                  : 'border-[var(--border-subtle)] bg-[var(--surface-card)] shadow-xs hover:border-[var(--rasi-border)] hover:bg-[var(--rasi-muted-bg)]/40'
               }`}
             >
-              <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="mb-2 flex items-center justify-between gap-2">
                 <span
-                  className={`flex h-6 w-6 items-center justify-center rounded-lg text-xs font-bold font-mono ${
+                  className={`flex h-6 w-6 items-center justify-center rounded-lg font-mono text-xs font-bold ${
                     isActive
                       ? 'bg-[var(--rasi-primary)] text-[var(--rasi-primary-text)]'
                       : isDone
-                        ? 'bg-emerald-500/20 text-emerald-400'
+                        ? 'bg-emerald-500 text-white shadow-xs dark:bg-emerald-600'
                         : 'bg-[var(--rasi-muted-bg)] text-[var(--rasi-muted)]'
                   }`}
                 >
-                  {isDone ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> : s.num}
+                  {isDone ? <Check className="h-3.5 w-3.5 stroke-[3]" /> : s.num}
                 </span>
 
                 <Icon
                   className={`h-4 w-4 ${
                     isActive
                       ? 'text-[var(--rasi-primary)]'
-                      : isDone
-                        ? 'text-emerald-400'
-                        : 'text-[var(--rasi-muted)] group-hover:text-[var(--rasi-text)]'
+                      : 'text-[var(--rasi-muted)] group-hover:text-[var(--rasi-text)]'
                   }`}
                 />
               </div>
 
               <span
-                className={`text-xs font-bold truncate ${
-                  isActive
-                    ? 'text-[var(--rasi-primary)]'
-                    : isDone
-                      ? 'text-emerald-400'
-                      : 'text-[var(--rasi-text)]'
+                className={`truncate text-xs font-bold ${
+                  isActive ? 'text-[var(--rasi-primary)]' : 'text-[var(--rasi-text)]'
                 }`}
               >
                 {s.title}
               </span>
-              <span className="text-[11px] text-[var(--rasi-muted)] truncate">{s.sub}</span>
+              <span className="truncate text-[11px] text-[var(--rasi-muted)]">{s.sub}</span>
             </Link>
           )
         })}
