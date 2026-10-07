@@ -33,6 +33,7 @@ import {
 } from '@/app/actions'
 import { BrokerAccumulationTable } from '@/components/BrokerAccumulationTable'
 import { MarkdownContent } from '@/components/MarkdownContent'
+import { MarketMetricsBar } from '@/components/MarketMetricsBar'
 import { SignalEvaluationPanel } from '@/components/SignalEvaluationPanel'
 import { Button } from '@/components/ui'
 import { POPULAR_STOCKS, type StockSuggestion, searchLocalStocks } from '@/domain/stocks'
@@ -828,92 +829,19 @@ export function DiscoverUnifiedExperience() {
             {/* Live Real Market Metrics Bar (Dari Sectors & Bursa API) */}
             {stockData && (
               <div className="space-y-3">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-sm">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--rasi-muted)] block">
-                      Harga Pasar Terkini
-                    </span>
-                    <div className="mt-1 flex items-baseline gap-2">
-                      <span className="font-mono text-xl sm:text-2xl font-black text-[var(--rasi-text)]">
-                        {stockData.price != null
-                          ? `Rp ${stockData.price.toLocaleString('id-ID')}`
-                          : '—'}
-                      </span>
-                      {stockData.priceChangeFraction != null && (
-                        <span
-                          className={`text-xs font-bold font-mono ${
-                            stockData.priceChangeFraction > 0
-                              ? 'text-emerald-400'
-                              : stockData.priceChangeFraction < 0
-                                ? 'text-rose-400'
-                                : 'text-[var(--rasi-muted)]'
-                          }`}
-                        >
-                          {stockData.priceChangeFraction > 0 ? '+' : ''}
-                          {(stockData.priceChangeFraction * 100).toFixed(2)}%
-                        </span>
-                      )}
-                    </div>
-                    <span className="text-[10px] text-[var(--rasi-muted)] block mt-0.5">
-                      Data Bursa: {stockData.priceDate || 'Bursa Terkini'}
-                    </span>
-                  </div>
-
-                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--rasi-muted)] block">
-                        Skor Komposit Risiko
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setShowRiskBreakdown((prev) => !prev)}
-                        className="text-[10px] font-bold text-[var(--rasi-primary)] hover:underline flex items-center gap-0.5"
-                      >
-                        <Calculator className="h-3 w-3" />
-                        <span>Rumus</span>
-                      </button>
-                    </div>
-                    <div className="mt-1 flex items-baseline gap-2">
-                      <span className="font-mono text-xl sm:text-2xl font-black text-[var(--rasi-text)]">
-                        {stockData.composite?.score ?? '—'}
-                      </span>
-                      <span className="text-xs text-[var(--rasi-muted)] font-mono">/100</span>
-                    </div>
-                    <span className="text-[10px] font-semibold text-[var(--rasi-primary)] block mt-0.5">
-                      Status: {stockData.composite?.status || 'Netral'}
-                    </span>
-                  </div>
-
-                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-sm">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--rasi-muted)] block">
-                      Volume Spike Ratio
-                    </span>
-                    <div className="mt-1">
-                      <span className="font-mono text-xl sm:text-2xl font-black text-[var(--rasi-text)]">
-                        {stockData.indicators.volume.spikeRatio != null
-                          ? `${stockData.indicators.volume.spikeRatio.toFixed(2)}x`
-                          : stockData.indicators.volume.formattedRatio || '1.00x'}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-semibold text-[var(--rasi-muted)] block mt-0.5 truncate">
-                      {stockData.indicators.volume.status || 'Volume Normal'}
-                    </span>
-                  </div>
-
-                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-sm">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--rasi-muted)] block">
-                      Arus Bandarmologi
-                    </span>
-                    <div className="mt-1">
-                      <span className="font-mono text-base sm:text-lg font-black text-emerald-400 block truncate">
-                        {stockData.indicators.bandarmology.status || 'Seimbang'}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-semibold text-[var(--rasi-muted)] block mt-0.5 truncate">
-                      Asing: {stockData.indicators.bandarmology.foreignFlowStatus || 'UNKNOWN'}
-                    </span>
-                  </div>
-                </div>
+                <MarketMetricsBar
+                  ticker={ticker}
+                  price={stockData.price}
+                  priceChangeFraction={stockData.priceChangeFraction}
+                  priceDate={stockData.priceDate}
+                  compositeScore={stockData.composite?.score}
+                  compositeStatus={stockData.composite?.status}
+                  volumeSpikeRatio={stockData.indicators.volume.spikeRatio}
+                  formattedVolumeRatio={stockData.indicators.volume.formattedRatio}
+                  volumeStatus={stockData.indicators.volume.status}
+                  bandarStatus={stockData.indicators.bandarmology.status}
+                  foreignFlowStatus={stockData.indicators.bandarmology.foreignFlowStatus}
+                />
 
                 {/* Collapsible / Expandable Breakdown of Formulas and Pillars */}
                 <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-sm space-y-3">

@@ -8,7 +8,11 @@ import {
   formatForeignFlow,
   formatPercentageChange,
   formatScore,
+  getBandarmologyPresentation,
+  getCompositeRiskPresentation,
+  getQuickMarketSummary,
   getStatusLabel,
+  getVolumeSpikePresentation,
 } from '../lib/presentation/stock.ts'
 
 test('formatForeignFlow formats positive, negative, zero, and null amounts', () => {
@@ -110,3 +114,82 @@ test('calculatePriceSma20 includes the current close from the twentieth session'
   assert.equal(sma[20], 1010.5)
   assert.equal(sma[24], 1014.5)
 })
+
+test('getCompositeRiskPresentation correctly classifies scores and provides intuitive labels', () => {
+  const normal = getCompositeRiskPresentation(34, 'NORMAL')
+  assert.equal(normal.score, 34)
+  assert.equal(normal.variant, 'low')
+  assert.equal(normal.statusLabel, 'Rendah')
+  assert.ok(normal.badgeClass.includes('emerald'))
+
+  const warning = getCompositeRiskPresentation(45, 'WARNING')
+  assert.equal(warning.variant, 'moderate')
+  assert.equal(warning.statusLabel, 'Sedang')
+
+  const high = getCompositeRiskPresentation(65, 'HIGH')
+  assert.equal(high.variant, 'high')
+  assert.equal(high.statusLabel, 'Tinggi')
+
+  const critical = getCompositeRiskPresentation(80, 'CRITICAL')
+  assert.equal(critical.variant, 'critical')
+  assert.equal(critical.statusLabel, 'Kritis')
+
+  const empty = getCompositeRiskPresentation(null)
+  assert.equal(empty.variant, 'insufficient')
+  assert.equal(empty.scoreText, '—')
+})
+
+test('getVolumeSpikePresentation formats ratios and sets appropriate variants', () => {
+  const normal = getVolumeSpikePresentation(1.25, 'NORMAL')
+  assert.equal(normal.variant, 'normal')
+  assert.equal(normal.statusLabel, 'Normal')
+  assert.ok(normal.ratioText.includes('1,25') || normal.ratioText.includes('1.25'))
+
+  const high = getVolumeSpikePresentation(1.8, 'HIGH')
+  assert.equal(high.variant, 'high')
+  assert.equal(high.statusLabel, 'Ramai')
+
+  const extreme = getVolumeSpikePresentation(3.1, 'EXTREME')
+  assert.equal(extreme.variant, 'extreme')
+  assert.equal(extreme.statusLabel, 'Ekstrem')
+
+  const low = getVolumeSpikePresentation(0.4, 'LOW')
+  assert.equal(low.variant, 'low')
+  assert.equal(low.statusLabel, 'Sepi')
+
+  const empty = getVolumeSpikePresentation(null)
+  assert.equal(empty.variant, 'insufficient')
+  assert.equal(empty.ratioText, '—')
+})
+
+test('getBandarmologyPresentation formats bandar status and foreign flow', () => {
+  const pres = getBandarmologyPresentation('NORMAL_ACCUMULATION', 'HEAVY_INFLOW')
+  assert.equal(pres.bandarLabel, 'Akumulasi Wajar')
+  assert.equal(pres.bandarVariant, 'bullish')
+  assert.equal(pres.foreignLabel, 'Beli Masif')
+  assert.equal(pres.foreignVariant, 'heavy-inflow')
+  assert.ok(pres.shortDescription.includes('Broker'))
+
+  const distribution = getBandarmologyPresentation('BIG_DISTRIBUTION', 'HEAVY_OUTFLOW')
+  assert.equal(distribution.bandarLabel, 'Distribusi Besar')
+  assert.equal(distribution.bandarVariant, 'strong-bearish')
+  assert.equal(distribution.foreignLabel, 'Jual Masif')
+  assert.equal(distribution.foreignVariant, 'heavy-outflow')
+})
+
+test('getQuickMarketSummary produces coherent, human-friendly Indonesian sentence', () => {
+  const summary = getQuickMarketSummary({
+    ticker: 'BBCA',
+    score: 34,
+    scoreStatus: 'NORMAL',
+    spikeRatio: 1.25,
+    bandarStatus: 'NORMAL_ACCUMULATION',
+    foreignFlowStatus: 'HEAVY_INFLOW',
+  })
+  assert.ok(summary.includes('BBCA'))
+  assert.ok(summary.includes('risiko tergolong rendah'))
+  assert.ok(summary.includes('34/100'))
+  assert.ok(summary.includes('volume transaksi bergerak wajar'))
+  assert.ok(summary.includes('akumulasi'))
+})
+
