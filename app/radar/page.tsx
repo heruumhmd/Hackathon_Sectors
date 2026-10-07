@@ -20,6 +20,8 @@ import {
   ShieldAlert,
   Sparkles,
   Trash2,
+  TrendingDown,
+  TrendingUp,
 } from 'lucide-react'
 
 import {
@@ -30,7 +32,6 @@ import {
 } from '@/app/actions'
 import { RadarEvidenceCases } from '@/components/RadarEvidenceCases'
 import { StockPreviewDialog } from '@/components/StockPreviewDialog'
-import { ResearchJourneyStepper } from '@/components/ResearchJourneyStepper'
 import { Button } from '@/components/ui'
 import { visibleRadarHistory } from '@/domain/radar'
 import { getNewsSentimentLabel } from '@/lib/presentation/stock'
@@ -241,9 +242,6 @@ function RadarPageContent() {
 
   return (
     <div className="space-y-8 py-4">
-      {/* 0. Guided Research Stepper (Tahap 3 Aktif) */}
-      <ResearchJourneyStepper currentStep={3} ticker={tickerParam || 'BBCA'} />
-
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 border-b border-[var(--rasi-border)] pb-6 sm:flex-row sm:items-center">
         <div>
@@ -285,21 +283,28 @@ function RadarPageContent() {
 
       {/* Snapshot Viewing Notice Banner */}
       {selectedSnapshot && (
-        <div className="flex flex-col justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 sm:flex-row sm:items-center dark:border-amber-800 dark:bg-[#181102] dark:text-amber-200">
-          <div className="flex items-center gap-2">
-            <History className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+        <div className="flex flex-col justify-between gap-3 border-b border-amber-400/60 pb-3 text-sm text-amber-800 sm:flex-row sm:items-center dark:border-amber-400/40 dark:text-amber-300">
+          <div className="flex items-start gap-2.5 sm:items-center">
+            <History className="mt-0.5 h-5 w-5 shrink-0 text-amber-500 sm:mt-0 dark:text-amber-400" />
             <div>
-              <p className="font-semibold"> Anda sedang melihat hasil sebelumnya </p>
-              <p className="text-xs text-amber-800/80 dark:text-amber-300/80">
-                {' '}
+              <p className="font-semibold text-amber-900 dark:text-amber-300">
+                Anda sedang melihat hasil sebelumnya
+              </p>
+              <p className="text-xs text-amber-700/80 dark:text-amber-300/75">
                 Hasil pemeriksaan {formatDate(selectedSnapshot.scannedAt)} (
                 {selectedSnapshot.sleepingGiantsCount} saham dengan berita positif dan harga belum
                 banyak naik, {selectedSnapshot.insiderAlertsCount} laporan jual beli pemegang saham
-                besar).{' '}
+                besar).
               </p>
             </div>
           </div>
-          <Button variant="secondary" size="sm" onClick={returnToActiveRadar} icon={ArrowLeft}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={returnToActiveRadar}
+            icon={ArrowLeft}
+            className="shrink-0"
+          >
             Kembali ke radar terkini
           </Button>
         </div>
@@ -557,12 +562,14 @@ function RadarPageContent() {
                     return (
                       <article
                         key={`${item.ticker}-${idx}`}
-                        className="rasi-ambient-top-cyan relative flex flex-col justify-between overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-gradient-to-br from-[var(--bg-main)] via-[var(--surface-card)] to-[var(--bg-main)] p-6 shadow-[var(--rasi-card-shadow)] transition-all hover:border-[var(--rasi-accent)]/60 hover:shadow-md"
+                        onClick={() => openPreview(item.ticker)}
+                        className="rasi-ambient-top-cyan group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-gradient-to-br from-[var(--bg-main)] via-[var(--surface-card)] to-[var(--bg-main)] p-6 shadow-[var(--rasi-card-shadow)] transition-all hover:border-[var(--rasi-accent)]/60 hover:shadow-md"
                       >
                         <div>
                           <div className="flex items-center justify-between gap-3">
                             <Link
                               href={`/saham/${item.ticker}`}
+                              onClick={(e) => e.stopPropagation()}
                               className="font-mono text-xl font-bold tracking-tight text-[var(--rasi-primary)] hover:underline focus-visible:outline-none"
                             >
                               {item.ticker}
@@ -582,10 +589,11 @@ function RadarPageContent() {
                             href={newsUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="group mt-3 inline-flex items-start gap-1.5 text-left text-sm leading-snug font-semibold text-[var(--rasi-text)] hover:text-[var(--rasi-primary)] hover:underline focus-visible:outline-none"
+                            onClick={(e) => e.stopPropagation()}
+                            className="group/headline mt-3 inline-flex items-start gap-1.5 text-left text-sm leading-snug font-semibold text-[var(--rasi-text)] hover:text-[var(--rasi-primary)] hover:underline focus-visible:outline-none"
                           >
                             <span>{item.headline}</span>
-                            <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--rasi-muted)] group-hover:text-[var(--rasi-primary)]" />
+                            <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--rasi-muted)] group-hover/headline:text-[var(--rasi-primary)]" />
                           </a>
 
                           <p className="mt-2 text-xs leading-relaxed text-[var(--rasi-muted)]">
@@ -597,14 +605,17 @@ function RadarPageContent() {
                           <span>Sumber: Sectors News</span>
                           <div className="flex items-center gap-3">
                             <span>{item.timestamp?.split('T')[0] ?? 'Terkini'}</span>
-                            <button
-                              type="button"
-                              onClick={() => openPreview(item.ticker)}
-                              className="inline-flex items-center gap-1 font-semibold text-[var(--rasi-primary)] hover:underline focus-visible:outline-none"
+                            <Link
+                              href={`/saham/${item.ticker}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="group/link inline-flex items-center gap-1 font-semibold text-[var(--rasi-primary)] hover:underline focus-visible:outline-none"
                             >
-                              <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                              Pratinjau
-                            </button>
+                              <span>Buka Detail</span>
+                              <ArrowRight
+                                className="h-3.5 w-3.5 transition-transform group-hover/link:translate-x-0.5"
+                                aria-hidden="true"
+                              />
+                            </Link>
                           </div>
                         </div>
                       </article>
@@ -655,39 +666,42 @@ function RadarPageContent() {
                   {filteredInsiderAlerts.map((item, idx) => (
                     <article
                       key={`${item.ticker}-${idx}`}
-                      className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-gradient-to-br from-[var(--bg-main)] via-[var(--surface-card)] to-[var(--bg-main)] p-6 shadow-[var(--rasi-card-shadow)] transition-all hover:border-[var(--rasi-primary)] hover:shadow-md"
+                      onClick={() => openPreview(item.ticker)}
+                      className="group relative flex cursor-pointer flex-col justify-between overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-gradient-to-br from-[var(--bg-main)] via-[var(--surface-card)] to-[var(--bg-main)] p-6 shadow-[var(--rasi-card-shadow)] transition-all hover:border-[var(--rasi-primary)] hover:shadow-md"
                     >
                       <div>
                         <div className="flex items-center justify-between gap-3">
                           <Link
                             href={`/saham/${item.ticker}`}
+                            onClick={(e) => e.stopPropagation()}
                             className="font-mono text-xl font-bold tracking-tight text-[var(--rasi-primary)] hover:underline focus-visible:outline-none"
                           >
                             {item.ticker}
                           </Link>
                           <span
-                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                            title={
                               item.action === 'BUY'
-                                ? 'rasi-glow-mint border border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
-                                : 'rasi-glow-rose border border-rose-500/30 bg-rose-500/10 text-rose-800 dark:text-rose-300'
+                                ? 'Pembelian Saham (Insider Buy)'
+                                : 'Penjualan Saham (Insider Sell)'
+                            }
+                            className={`inline-flex items-center justify-center transition-transform hover:scale-110 ${
+                              item.action === 'BUY' ? 'text-emerald-400' : 'text-rose-400'
                             }`}
                           >
-                            <span
-                              className={`h-1.5 w-1.5 rounded-full ${
-                                item.action === 'BUY' ? 'bg-emerald-500' : 'bg-rose-500'
-                              }`}
-                            />
-                            {item.action === 'BUY' ? 'Pembelian' : 'Penjualan'}
+                            {item.action === 'BUY' ? (
+                              <TrendingUp className="h-5 w-5" aria-hidden="true" />
+                            ) : (
+                              <TrendingDown className="h-5 w-5" aria-hidden="true" />
+                            )}
+                            <span className="sr-only">
+                              {item.action === 'BUY' ? 'Pembelian' : 'Penjualan'}
+                            </span>
                           </span>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => openPreview(item.ticker)}
-                          className="mt-3 text-left text-sm font-semibold text-[var(--rasi-text)] hover:text-[var(--rasi-primary)] hover:underline focus-visible:outline-none"
-                        >
+                        <h3 className="mt-3 text-left text-sm font-semibold text-[var(--rasi-text)] transition-colors group-hover:text-[var(--rasi-primary)]">
                           {item.holderName}
-                        </button>
+                        </h3>
 
                         <p className="mt-1 font-mono text-xs font-medium text-[var(--rasi-muted)]">
                           Estimasi nilai: Rp {(item.valueIdr / 1_000_000_000).toFixed(1)} M
@@ -702,14 +716,17 @@ function RadarPageContent() {
                         <span> Sumber: laporan kepemilikan melalui Sectors </span>
                         <div className="flex items-center gap-3">
                           <span>{item.timestamp?.split('T')[0] ?? 'Terkini'}</span>
-                          <button
-                            type="button"
-                            onClick={() => openPreview(item.ticker)}
-                            className="inline-flex items-center gap-1 font-semibold text-[var(--rasi-primary)] hover:underline focus-visible:outline-none"
+                          <Link
+                            href={`/saham/${item.ticker}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="group/link inline-flex items-center gap-1 font-semibold text-[var(--rasi-primary)] hover:underline focus-visible:outline-none"
                           >
-                            <Eye className="h-3.5 w-3.5" aria-hidden="true" />
-                            Pratinjau
-                          </button>
+                            <span>Buka Detail</span>
+                            <ArrowRight
+                              className="h-3.5 w-3.5 transition-transform group-hover/link:translate-x-0.5"
+                              aria-hidden="true"
+                            />
+                          </Link>
                         </div>
                       </div>
                     </article>
@@ -864,26 +881,28 @@ function RadarPageContent() {
 
       {/* Action Banner to Final Stage: Arahkan ke Asisten AI (Tahap 4 dari 4) */}
       <div className="relative overflow-hidden rounded-2xl border border-[var(--rasi-primary)]/40 bg-gradient-to-r from-[var(--rasi-primary)]/10 via-[var(--surface-card)] to-[var(--rasi-accent)]/10 p-6 shadow-[var(--rasi-card-shadow)]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-          <div className="space-y-1.5 max-w-xl">
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+          <div className="max-w-xl space-y-1.5">
             <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--rasi-primary)]">
               <span>Langkah Terakhir (Tahap 4 dari 4)</span>
               <ChevronRight className="h-3.5 w-3.5" />
             </div>
-            <h3 className="text-base sm:text-lg font-bold text-[var(--rasi-text)]">
+            <h3 className="text-base font-bold text-[var(--rasi-text)] sm:text-lg">
               Arahkan ke Asisten AI RASI untuk Sintesis {tickerParam || 'Saham'}
             </h3>
-            <p className="text-xs text-[var(--rasi-muted)] leading-relaxed">
-              Kompilasikan seluruh hasil evaluasi sinyal intraday, kalkulasi risiko, peta akumulasi broker, dan katalis radar pasar dalam satu analisis komprehensif bersama Asisten AI Gemini.
+            <p className="text-xs leading-relaxed text-[var(--rasi-muted)]">
+              Kompilasikan seluruh hasil evaluasi sinyal intraday, kalkulasi risiko, peta akumulasi
+              broker, dan katalis radar pasar dalam satu analisis komprehensif bersama Asisten AI
+              Gemini.
             </p>
           </div>
 
           <div className="shrink-0">
             <Link
               href={`/asisten?symbol=${tickerParam || 'BBCA'}&flow=discover&prompt=${encodeURIComponent(
-                `Tolong berikan kesimpulan sintesis untuk saham ${tickerParam || 'BBCA'}: evaluasi sinyal sesi intraday, rencana risiko stop loss/take profit, peta akumulasi broker, dan pantauan radar pasar.`
+                `Tolong berikan kesimpulan sintesis untuk saham ${tickerParam || 'BBCA'}: evaluasi sinyal sesi intraday, rencana risiko stop loss/take profit, peta akumulasi broker, dan pantauan radar pasar.`,
               )}`}
-              className="inline-flex items-center gap-2 rounded-xl bg-[var(--rasi-primary)] px-5 py-3 text-sm font-bold text-[var(--rasi-primary-text)] shadow-md hover:opacity-90 active:scale-95 transition-all"
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--rasi-primary)] px-5 py-3 text-sm font-bold text-[var(--rasi-primary-text)] shadow-md transition-all hover:opacity-90 active:scale-95"
             >
               <span>Arahkan ke Asisten AI ({tickerParam || 'BBCA'})</span>
               <ArrowRight className="h-4 w-4" />

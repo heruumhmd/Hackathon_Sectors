@@ -6,7 +6,6 @@ import { useSearchParams } from 'next/navigation'
 
 import {
   AlertTriangle,
-  Bot,
   Check,
   Copy,
   Cpu,
@@ -276,17 +275,20 @@ function AssistantContent() {
 
       {/* Synthesis Callout Banner if coming from research funnel */}
       {promptParam && messages.length === 0 && (
-        <div className="rounded-2xl border border-[var(--rasi-primary)]/40 bg-gradient-to-r from-[var(--rasi-primary)]/15 via-[var(--surface-card)] to-[var(--rasi-accent)]/15 p-5 shadow-[var(--rasi-card-shadow)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col justify-between gap-4 rounded-2xl border border-[var(--rasi-primary)]/40 bg-gradient-to-r from-[var(--rasi-primary)]/15 via-[var(--surface-card)] to-[var(--rasi-accent)]/15 p-5 shadow-[var(--rasi-card-shadow)] sm:flex-row sm:items-center">
           <div className="space-y-1">
             <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--rasi-primary)]">
               <Sparkles className="h-4 w-4" />
               <span>Sintesis Riset Terpadu Siap Dijalankan</span>
             </span>
-            <p className="text-xs text-[var(--rasi-text)] font-semibold">
-              Pertanyaan sintesis komprehensif untuk saham {ticker || 'terpilih'} telah disiapkan secara otomatis.
+            <p className="text-xs font-semibold text-[var(--rasi-text)]">
+              Pertanyaan sintesis komprehensif untuk saham {ticker || 'terpilih'} telah disiapkan
+              secara otomatis.
             </p>
             <p className="text-[11px] text-[var(--rasi-muted)]">
-              Klik tombol &quot;Kirim&quot; di bawah untuk meminta Asisten AI mensintesiskan Evaluasi Sinyal Intraday, Rencana Risiko, Peta Akumulasi Broker, dan Katalis Radar Pasar.
+              Klik tombol &quot;Kirim&quot; di bawah untuk meminta Asisten AI mensintesiskan
+              Evaluasi Sinyal Intraday, Rencana Risiko, Peta Akumulasi Broker, dan Katalis Radar
+              Pasar.
             </p>
           </div>
           {session?.user && (
@@ -308,7 +310,7 @@ function AssistantContent() {
       <div className="flex flex-col justify-between gap-4 border-b border-[var(--rasi-border)] pb-4 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--rasi-primary)] text-[var(--rasi-primary-text)] shadow-xs">
-            <Bot className="h-5 w-5" />
+            <Sparkles className="h-5 w-5" />
           </span>
           <div>
             <div className="flex items-center gap-2">

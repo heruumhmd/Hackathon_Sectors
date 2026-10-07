@@ -1,7 +1,9 @@
 'use client'
 
 import React, { useMemo, useState } from 'react'
+
 import Link from 'next/link'
+
 import {
   ArrowRight,
   ArrowRightLeft,
@@ -18,11 +20,7 @@ import {
 
 import { ResearchJourneyStepper } from '@/components/ResearchJourneyStepper'
 import type { BandarmologyIndicator } from '@/lib/contracts/analysis'
-import type {
-  BrokerRegistryEntry,
-  BrokerRow,
-  BrokerSummaryData,
-} from '@/lib/contracts/market'
+import type { BrokerRegistryEntry, BrokerRow, BrokerSummaryData } from '@/lib/contracts/market'
 import { formatCurrencyIdr } from '@/lib/presentation/stock'
 
 export interface BrokerAccumulationTableProps {
@@ -194,12 +192,12 @@ export function BrokerAccumulationTable({
       {showStepper && <ResearchJourneyStepper currentStep={2} ticker={cleanTicker} />}
 
       {/* 2. Header & Smart Money Cohort Summary */}
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-5 sm:p-6 shadow-[var(--rasi-card-shadow)] space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border-subtle)] pb-4">
+      <div className="space-y-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-5 shadow-[var(--rasi-card-shadow)] sm:p-6">
+        <div className="flex flex-col justify-between gap-3 border-b border-[var(--border-subtle)] pb-4 sm:flex-row sm:items-center">
           <div>
             <div className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-[var(--rasi-primary)]" />
-              <h3 className="text-base sm:text-lg font-bold text-[var(--rasi-text)]">
+              <h3 className="text-base font-bold text-[var(--rasi-text)] sm:text-lg">
                 Tabel Perbandingan Akumulasi vs Distribusi Broker: {cleanTicker}
               </h3>
             </div>
@@ -207,18 +205,18 @@ export function BrokerAccumulationTable({
               Perbandingan pihak yang melakukan pembelian bersih (akumulasi) versus pihak yang
               melakukan penjualan bersih (distribusi).
               {latestSummaryEntry?.date && (
-                <span className="ml-1 text-[var(--rasi-text)] font-medium">
+                <span className="ml-1 font-medium text-[var(--rasi-text)]">
                   • Tanggal: {latestSummaryEntry.date}
                 </span>
               )}
             </p>
           </div>
 
-          <div className="flex items-center gap-1.5 self-start sm:self-auto bg-[var(--rasi-muted-bg)] p-1 rounded-xl text-xs font-semibold">
+          <div className="flex items-center gap-1.5 self-start rounded-xl bg-[var(--rasi-muted-bg)] p-1 text-xs font-semibold sm:self-auto">
             <button
               type="button"
               onClick={() => setViewMode('comparison')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
+              className={`rounded-lg px-3 py-1.5 transition-colors ${
                 viewMode === 'comparison'
                   ? 'bg-[var(--surface-card)] text-[var(--rasi-primary)] shadow-xs'
                   : 'text-[var(--rasi-muted)] hover:text-[var(--rasi-text)]'
@@ -230,7 +228,7 @@ export function BrokerAccumulationTable({
               <button
                 type="button"
                 onClick={() => setViewMode('all')}
-                className={`px-3 py-1.5 rounded-lg transition-colors ${
+                className={`rounded-lg px-3 py-1.5 transition-colors ${
                   viewMode === 'all'
                     ? 'bg-[var(--surface-card)] text-[var(--rasi-primary)] shadow-xs'
                     : 'text-[var(--rasi-muted)] hover:text-[var(--rasi-text)]'
@@ -243,10 +241,10 @@ export function BrokerAccumulationTable({
         </div>
 
         {/* 3 Smart Money Insight Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)]/50 p-4 space-y-1">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="space-y-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)]/50 p-4">
             <span className="flex items-center gap-1.5 text-xs text-[var(--rasi-muted)]">
-              <Building2 className="h-3.5 w-3.5 text-indigo-400" />
+              <Building2 className="h-3.5 w-3.5 text-[var(--rasi-muted)]" />
               Arus Bersih Institusi
             </span>
             <div className="flex items-baseline gap-2">
@@ -264,9 +262,9 @@ export function BrokerAccumulationTable({
             </div>
           </div>
 
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)]/50 p-4 space-y-1">
+          <div className="space-y-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)]/50 p-4">
             <span className="flex items-center gap-1.5 text-xs text-[var(--rasi-muted)]">
-              <Users className="h-3.5 w-3.5 text-amber-400" />
+              <Users className="h-3.5 w-3.5 text-[var(--rasi-muted)]" />
               Arus Bersih Ritel
             </span>
             <div className="flex items-baseline gap-2">
@@ -284,9 +282,9 @@ export function BrokerAccumulationTable({
             </div>
           </div>
 
-          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)]/50 p-4 space-y-1">
+          <div className="space-y-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)]/50 p-4">
             <span className="flex items-center gap-1.5 text-xs text-[var(--rasi-muted)]">
-              <Globe2 className="h-3.5 w-3.5 text-sky-400" />
+              <Globe2 className="h-3.5 w-3.5 text-[var(--rasi-muted)]" />
               Arus Bersih Investor Asing
             </span>
             <div className="flex items-baseline gap-2">
@@ -308,19 +306,19 @@ export function BrokerAccumulationTable({
 
       {/* 3. Main Comparative View */}
       {viewMode === 'comparison' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {/* SISI KIRI: TOP BROKER AKUMULASI (NET BUY) */}
-          <div className="rounded-2xl border border-emerald-500/30 bg-[var(--surface-card)] shadow-[var(--rasi-card-shadow)] overflow-hidden">
-            <div className="bg-emerald-500/10 px-4 py-3 border-b border-emerald-500/20 flex items-center justify-between">
+          <div className="overflow-hidden rounded-2xl border border-emerald-500/30 bg-[var(--surface-card)] shadow-[var(--rasi-card-shadow)]">
+            <div className="flex items-center justify-between border-b border-emerald-500/20 bg-emerald-500/10 px-4 py-3">
               <div className="flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white text-[10px] font-bold">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
                   ✓
                 </span>
-                <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                <h4 className="text-xs font-bold tracking-wider text-emerald-400 uppercase">
                   Broker yang Sedang Akumulasi (Top Pembeli Bersih)
                 </h4>
               </div>
-              <span className="text-[11px] font-mono font-bold text-emerald-400">
+              <span className="font-mono text-[11px] font-bold text-emerald-400">
                 CR3 Beli: {bandarmology.cr3Buy !== null ? `${bandarmology.cr3Buy}%` : '—'}
               </span>
             </div>
@@ -329,10 +327,18 @@ export function BrokerAccumulationTable({
               <table className="w-full text-left text-xs">
                 <thead className="border-b border-[var(--border-subtle)] bg-[var(--rasi-muted-bg)]/40 text-[var(--rasi-muted)]">
                   <tr>
-                    <th scope="col" className="px-3 py-2.5">Broker</th>
-                    <th scope="col" className="px-2 py-2.5 text-center">Tipe</th>
-                    <th scope="col" className="px-3 py-2.5 text-right">Volume (Lot)</th>
-                    <th scope="col" className="px-3 py-2.5 text-right">Avg Beli</th>
+                    <th scope="col" className="px-3 py-2.5">
+                      Broker
+                    </th>
+                    <th scope="col" className="px-2 py-2.5 text-center">
+                      Tipe
+                    </th>
+                    <th scope="col" className="px-3 py-2.5 text-right">
+                      Volume (Lot)
+                    </th>
+                    <th scope="col" className="px-3 py-2.5 text-right">
+                      Avg Beli
+                    </th>
                     <th scope="col" className="px-3 py-2.5 text-right font-bold text-emerald-400">
                       Beli Bersih
                     </th>
@@ -347,35 +353,41 @@ export function BrokerAccumulationTable({
                     </tr>
                   ) : (
                     netBuyers.map((b, idx) => (
-                      <tr key={b.code} className="hover:bg-[var(--rasi-muted-bg)]/30 transition-colors">
+                      <tr
+                        key={b.code}
+                        className="transition-colors hover:bg-[var(--rasi-muted-bg)]/30"
+                      >
                         <td className="px-3 py-2.5">
                           <div className="flex items-baseline gap-1.5">
                             <span className="font-mono font-bold text-emerald-400">{b.code}</span>
-                            <span className="text-[11px] text-[var(--rasi-muted)] truncate max-w-[110px]" title={b.name}>
+                            <span
+                              className="max-w-[110px] truncate text-[11px] text-[var(--rasi-muted)]"
+                              title={b.name}
+                            >
                               {b.name}
                             </span>
                           </div>
                         </td>
                         <td className="px-2 py-2.5 text-center">
                           <span
-                            className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                            className={`inline-block text-[11px] font-semibold ${
                               b.isForeign
-                                ? 'bg-sky-500/20 text-sky-300'
+                                ? 'text-sky-300'
                                 : b.cohort === 'retail'
-                                  ? 'bg-amber-500/20 text-amber-300'
-                                  : 'bg-indigo-500/20 text-indigo-300'
+                                  ? 'text-amber-300'
+                                  : 'text-indigo-300'
                             }`}
                           >
                             {b.isForeign ? 'Asing' : b.cohort === 'retail' ? 'Ritel' : 'Institusi'}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono tabular-nums text-[var(--rasi-muted)]">
+                        <td className="px-3 py-2.5 text-right font-mono text-[var(--rasi-muted)] tabular-nums">
                           {formatLot(b.blot || b.nlot)}
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono tabular-nums text-[var(--rasi-text)]">
+                        <td className="px-3 py-2.5 text-right font-mono text-[var(--rasi-text)] tabular-nums">
                           {b.bavg > 0 ? `Rp ${b.bavg.toLocaleString('id-ID')}` : '—'}
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono font-bold tabular-nums text-emerald-400">
+                        <td className="px-3 py-2.5 text-right font-mono font-bold text-emerald-400 tabular-nums">
                           +{formatShortBillions(b.nval)}
                         </td>
                       </tr>
@@ -387,17 +399,17 @@ export function BrokerAccumulationTable({
           </div>
 
           {/* SISI KANAN: TOP BROKER DISTRIBUSI (NET SELL) */}
-          <div className="rounded-2xl border border-rose-500/30 bg-[var(--surface-card)] shadow-[var(--rasi-card-shadow)] overflow-hidden">
-            <div className="bg-rose-500/10 px-4 py-3 border-b border-rose-500/20 flex items-center justify-between">
+          <div className="overflow-hidden rounded-2xl border border-rose-500/30 bg-[var(--surface-card)] shadow-[var(--rasi-card-shadow)]">
+            <div className="flex items-center justify-between border-b border-rose-500/20 bg-rose-500/10 px-4 py-3">
               <div className="flex items-center gap-2">
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-white text-[10px] font-bold">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white">
                   ✕
                 </span>
-                <h4 className="text-xs font-bold text-rose-400 uppercase tracking-wider">
+                <h4 className="text-xs font-bold tracking-wider text-rose-400 uppercase">
                   Broker yang Melepas Barang (Top Penjual Bersih)
                 </h4>
               </div>
-              <span className="text-[11px] font-mono font-bold text-rose-400">
+              <span className="font-mono text-[11px] font-bold text-rose-400">
                 CR3 Jual: {bandarmology.cr3Sell !== null ? `${bandarmology.cr3Sell}%` : '—'}
               </span>
             </div>
@@ -406,10 +418,18 @@ export function BrokerAccumulationTable({
               <table className="w-full text-left text-xs">
                 <thead className="border-b border-[var(--border-subtle)] bg-[var(--rasi-muted-bg)]/40 text-[var(--rasi-muted)]">
                   <tr>
-                    <th scope="col" className="px-3 py-2.5">Broker</th>
-                    <th scope="col" className="px-2 py-2.5 text-center">Tipe</th>
-                    <th scope="col" className="px-3 py-2.5 text-right">Volume (Lot)</th>
-                    <th scope="col" className="px-3 py-2.5 text-right">Avg Jual</th>
+                    <th scope="col" className="px-3 py-2.5">
+                      Broker
+                    </th>
+                    <th scope="col" className="px-2 py-2.5 text-center">
+                      Tipe
+                    </th>
+                    <th scope="col" className="px-3 py-2.5 text-right">
+                      Volume (Lot)
+                    </th>
+                    <th scope="col" className="px-3 py-2.5 text-right">
+                      Avg Jual
+                    </th>
                     <th scope="col" className="px-3 py-2.5 text-right font-bold text-rose-400">
                       Jual Bersih
                     </th>
@@ -424,35 +444,41 @@ export function BrokerAccumulationTable({
                     </tr>
                   ) : (
                     netSellers.map((s, idx) => (
-                      <tr key={s.code} className="hover:bg-[var(--rasi-muted-bg)]/30 transition-colors">
+                      <tr
+                        key={s.code}
+                        className="transition-colors hover:bg-[var(--rasi-muted-bg)]/30"
+                      >
                         <td className="px-3 py-2.5">
                           <div className="flex items-baseline gap-1.5">
                             <span className="font-mono font-bold text-rose-400">{s.code}</span>
-                            <span className="text-[11px] text-[var(--rasi-muted)] truncate max-w-[110px]" title={s.name}>
+                            <span
+                              className="max-w-[110px] truncate text-[11px] text-[var(--rasi-muted)]"
+                              title={s.name}
+                            >
                               {s.name}
                             </span>
                           </div>
                         </td>
                         <td className="px-2 py-2.5 text-center">
                           <span
-                            className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                            className={`inline-block text-[11px] font-semibold ${
                               s.isForeign
-                                ? 'bg-sky-500/20 text-sky-300'
+                                ? 'text-sky-300'
                                 : s.cohort === 'retail'
-                                  ? 'bg-amber-500/20 text-amber-300'
-                                  : 'bg-indigo-500/20 text-indigo-300'
+                                  ? 'text-amber-300'
+                                  : 'text-indigo-300'
                             }`}
                           >
                             {s.isForeign ? 'Asing' : s.cohort === 'retail' ? 'Ritel' : 'Institusi'}
                           </span>
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono tabular-nums text-[var(--rasi-muted)]">
+                        <td className="px-3 py-2.5 text-right font-mono text-[var(--rasi-muted)] tabular-nums">
                           {formatLot(s.slot || s.nlot)}
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono tabular-nums text-[var(--rasi-text)]">
+                        <td className="px-3 py-2.5 text-right font-mono text-[var(--rasi-text)] tabular-nums">
                           {s.savg > 0 ? `Rp ${s.savg.toLocaleString('id-ID')}` : '—'}
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono font-bold tabular-nums text-rose-400">
+                        <td className="px-3 py-2.5 text-right font-mono font-bold text-rose-400 tabular-nums">
                           {formatShortBillions(s.nval)}
                         </td>
                       </tr>
@@ -467,9 +493,9 @@ export function BrokerAccumulationTable({
 
       {/* 4. Alternative View: All Active Brokers Table */}
       {viewMode === 'all' && (
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] shadow-[var(--rasi-card-shadow)] overflow-hidden">
-          <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between">
-            <h4 className="text-xs font-bold text-[var(--rasi-text)] uppercase tracking-wider">
+        <div className="overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] shadow-[var(--rasi-card-shadow)]">
+          <div className="flex items-center justify-between border-b border-[var(--border-subtle)] p-4">
+            <h4 className="text-xs font-bold tracking-wider text-[var(--rasi-text)] uppercase">
               Daftar Seluruh Broker yang Bertransaksi ({enrichedRows.length})
             </h4>
             <div className="flex items-center gap-2 text-xs">
@@ -477,7 +503,7 @@ export function BrokerAccumulationTable({
               <button
                 type="button"
                 onClick={() => setSortBy('netVal')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                className={`rounded px-2 py-0.5 text-[11px] font-semibold ${
                   sortBy === 'netVal'
                     ? 'bg-[var(--rasi-primary)] text-[var(--rasi-primary-text)]'
                     : 'bg-[var(--rasi-muted-bg)] text-[var(--rasi-muted)]'
@@ -488,7 +514,7 @@ export function BrokerAccumulationTable({
               <button
                 type="button"
                 onClick={() => setSortBy('buyVal')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                className={`rounded px-2 py-0.5 text-[11px] font-semibold ${
                   sortBy === 'buyVal'
                     ? 'bg-[var(--rasi-primary)] text-[var(--rasi-primary-text)]'
                     : 'bg-[var(--rasi-muted-bg)] text-[var(--rasi-muted)]'
@@ -499,7 +525,7 @@ export function BrokerAccumulationTable({
               <button
                 type="button"
                 onClick={() => setSortBy('sellVal')}
-                className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                className={`rounded px-2 py-0.5 text-[11px] font-semibold ${
                   sortBy === 'sellVal'
                     ? 'bg-[var(--rasi-primary)] text-[var(--rasi-primary-text)]'
                     : 'bg-[var(--rasi-muted-bg)] text-[var(--rasi-muted)]'
@@ -514,14 +540,30 @@ export function BrokerAccumulationTable({
             <table className="w-full text-left text-xs">
               <thead className="border-b border-[var(--border-subtle)] bg-[var(--rasi-muted-bg)]/40 text-[var(--rasi-muted)]">
                 <tr>
-                  <th scope="col" className="px-3 py-2.5">Kode</th>
-                  <th scope="col" className="px-3 py-2.5">Nama Broker</th>
-                  <th scope="col" className="px-2 py-2.5 text-center">Tipe</th>
-                  <th scope="col" className="px-3 py-2.5 text-right">Beli (Rp M)</th>
-                  <th scope="col" className="px-3 py-2.5 text-right">Avg Beli</th>
-                  <th scope="col" className="px-3 py-2.5 text-right">Jual (Rp M)</th>
-                  <th scope="col" className="px-3 py-2.5 text-right">Avg Jual</th>
-                  <th scope="col" className="px-3 py-2.5 text-right font-bold">Net (Rp M)</th>
+                  <th scope="col" className="px-3 py-2.5">
+                    Kode
+                  </th>
+                  <th scope="col" className="px-3 py-2.5">
+                    Nama Broker
+                  </th>
+                  <th scope="col" className="px-2 py-2.5 text-center">
+                    Tipe
+                  </th>
+                  <th scope="col" className="px-3 py-2.5 text-right">
+                    Beli (Rp M)
+                  </th>
+                  <th scope="col" className="px-3 py-2.5 text-right">
+                    Avg Beli
+                  </th>
+                  <th scope="col" className="px-3 py-2.5 text-right">
+                    Jual (Rp M)
+                  </th>
+                  <th scope="col" className="px-3 py-2.5 text-right">
+                    Avg Jual
+                  </th>
+                  <th scope="col" className="px-3 py-2.5 text-right font-bold">
+                    Net (Rp M)
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--border-subtle)] text-[var(--rasi-text)]">
@@ -532,21 +574,24 @@ export function BrokerAccumulationTable({
                     return b.nval - a.nval
                   })
                   .map((r) => (
-                    <tr key={r.code} className="hover:bg-[var(--rasi-muted-bg)]/30 transition-colors">
+                    <tr
+                      key={r.code}
+                      className="transition-colors hover:bg-[var(--rasi-muted-bg)]/30"
+                    >
                       <td className="px-3 py-2 font-mono font-bold text-[var(--rasi-primary)]">
                         {r.code}
                       </td>
-                      <td className="px-3 py-2 text-[var(--rasi-muted)] truncate max-w-[140px]">
+                      <td className="max-w-[140px] truncate px-3 py-2 text-[var(--rasi-muted)]">
                         {r.name}
                       </td>
                       <td className="px-2 py-2 text-center">
                         <span
-                          className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                          className={`inline-block text-[11px] font-semibold ${
                             r.isForeign
-                              ? 'bg-sky-500/20 text-sky-300'
+                              ? 'text-sky-300'
                               : r.cohort === 'retail'
-                                ? 'bg-amber-500/20 text-amber-300'
-                                : 'bg-indigo-500/20 text-indigo-300'
+                                ? 'text-amber-300'
+                                : 'text-indigo-300'
                           }`}
                         >
                           {r.isForeign ? 'Asing' : r.cohort === 'retail' ? 'Ritel' : 'Institusi'}
@@ -555,13 +600,13 @@ export function BrokerAccumulationTable({
                       <td className="px-3 py-2 text-right font-mono tabular-nums">
                         {formatShortBillions(r.bval)}
                       </td>
-                      <td className="px-3 py-2 text-right font-mono tabular-nums text-[var(--rasi-muted)]">
+                      <td className="px-3 py-2 text-right font-mono text-[var(--rasi-muted)] tabular-nums">
                         {r.bavg > 0 ? `Rp ${r.bavg.toLocaleString('id-ID')}` : '—'}
                       </td>
                       <td className="px-3 py-2 text-right font-mono tabular-nums">
                         {formatShortBillions(r.sval)}
                       </td>
-                      <td className="px-3 py-2 text-right font-mono tabular-nums text-[var(--rasi-muted)]">
+                      <td className="px-3 py-2 text-right font-mono text-[var(--rasi-muted)] tabular-nums">
                         {r.savg > 0 ? `Rp ${r.savg.toLocaleString('id-ID')}` : '—'}
                       </td>
                       <td
@@ -582,24 +627,26 @@ export function BrokerAccumulationTable({
 
       {/* 5. Action Banner to Next Stage: Radar Pasar & Katalis Berita (Tahap 3 dari 4) */}
       <div className="relative overflow-hidden rounded-2xl border border-[var(--rasi-primary)]/40 bg-gradient-to-r from-[var(--rasi-primary)]/10 via-[var(--surface-card)] to-[var(--rasi-accent)]/10 p-6 shadow-[var(--rasi-card-shadow)]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-          <div className="space-y-1.5 max-w-xl">
+        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+          <div className="max-w-xl space-y-1.5">
             <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--rasi-primary)]">
               <span>Langkah Selanjutnya (Tahap 3 dari 4)</span>
               <ChevronRight className="h-3.5 w-3.5" />
             </div>
-            <h3 className="text-base sm:text-lg font-bold text-[var(--rasi-text)]">
+            <h3 className="text-base font-bold text-[var(--rasi-text)] sm:text-lg">
               Verifikasi dengan Radar Pasar & Katalis Berita {cleanTicker}
             </h3>
-            <p className="text-xs text-[var(--rasi-muted)] leading-relaxed">
-              Setelah memetakan siapa saja broker yang mengakumulasi saham {cleanTicker}, periksa apakah ada katalis berita positif berdampak besar (Sleeping Giants) atau aksi transaksi pemegang saham pengendali (Insider Filings) di Radar Pasar.
+            <p className="text-xs leading-relaxed text-[var(--rasi-muted)]">
+              Setelah memetakan siapa saja broker yang mengakumulasi saham {cleanTicker}, periksa
+              apakah ada katalis berita positif berdampak besar (Sleeping Giants) atau aksi
+              transaksi pemegang saham pengendali (Insider Filings) di Radar Pasar.
             </p>
           </div>
 
           <div className="shrink-0">
             <Link
               href={`/radar?ticker=${cleanTicker}&flow=discover`}
-              className="inline-flex items-center gap-2 rounded-xl bg-[var(--rasi-primary)] px-5 py-3 text-sm font-bold text-[var(--rasi-primary-text)] shadow-md hover:opacity-90 active:scale-95 transition-all"
+              className="inline-flex items-center gap-2 rounded-xl bg-[var(--rasi-primary)] px-5 py-3 text-sm font-bold text-[var(--rasi-primary-text)] shadow-md transition-all hover:opacity-90 active:scale-95"
             >
               <span>Lanjut ke Radar Pasar ({cleanTicker})</span>
               <ArrowRight className="h-4 w-4" />

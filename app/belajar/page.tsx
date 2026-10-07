@@ -54,7 +54,7 @@ export default function LearnPage() {
             </div>
             <Link
               href="/asisten"
-              className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-[var(--rasi-accent)] hover:underline"
+              className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-[var(--rasi-primary)] dark:text-white hover:underline"
             >
               <Info className="h-3.5 w-3.5" /> Tanyakan ke AI
             </Link>

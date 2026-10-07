@@ -1,57 +1,41 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+
 import {
   ArrowLeft,
   ArrowRight,
-  Bot,
   Building2,
   Calculator,
-  CheckCircle2,
+  Check,
   ChevronDown,
-  ChevronRight,
-  Clock,
-  Compass,
   ExternalLink,
-  Eye,
   FileText,
-  HelpCircle,
-  History,
-  Layers,
   Lightbulb,
   Loader2,
   Radar,
   RefreshCw,
   Search,
   Send,
-  ShieldAlert,
   ShieldCheck,
   Sparkles,
   TrendingUp,
-  Users,
   X,
 } from 'lucide-react'
 
 import {
   type MarketRadarData,
   getMarketRadarFeed,
-  getSignalAnalysisAction,
   getStockData,
-  saveResearchNoteAction,
 } from '@/app/actions'
 import { BrokerAccumulationTable } from '@/components/BrokerAccumulationTable'
 import { MarkdownContent } from '@/components/MarkdownContent'
 import { SignalEvaluationPanel } from '@/components/SignalEvaluationPanel'
 import { Button } from '@/components/ui'
-import { POPULAR_STOCKS, searchLocalStocks, type StockSuggestion } from '@/domain/stocks'
-import type { BandarmologyIndicator } from '@/lib/contracts/analysis'
-import type {
-  BrokerRegistryEntry,
-  BrokerSummaryData,
-  MarketNewsItem,
-} from '@/lib/contracts/market'
+import { POPULAR_STOCKS, type StockSuggestion, searchLocalStocks } from '@/domain/stocks'
 import type { StockDataResult } from '@/lib/server/services/analysis'
 
 const FEATURED_TICKERS = [
@@ -72,7 +56,6 @@ const CATEGORY_MAP: Record<string, string[]> = {
 }
 
 export function DiscoverUnifiedExperience() {
-  const router = useRouter()
   const searchParams = useSearchParams()
 
   const rawTicker = (searchParams.get('ticker') || searchParams.get('symbol') || '')
@@ -167,12 +150,6 @@ export function DiscoverUnifiedExperience() {
   const [chatLoading, setChatLoading] = useState(false)
   const [chatError, setChatError] = useState('')
 
-  // Research Note / Thesis state
-  const [thesisText, setThesisText] = useState('')
-  const [invalidationText, setInvalidationText] = useState('')
-  const [thesisSaving, setThesisSaving] = useState(false)
-  const [thesisMessage, setThesisMessage] = useState('')
-
   // Update URL state without page reload
   const syncUrl = (newTicker: string, newStage: number) => {
     const url = new URL(window.location.href)
@@ -235,17 +212,23 @@ export function DiscoverUnifiedExperience() {
   // Sync on ticker changes
   useEffect(() => {
     if (!ticker) return
-    void loadStockData(ticker)
-    setChatMessages([])
-    setChatInput(
-      `Tolong berikan kesimpulan sintesis untuk saham ${ticker}: evaluasi sinyal sesi intraday, rencana risiko stop loss/take profit, peta akumulasi broker, dan pantauan radar pasar.`,
-    )
+    const timer = setTimeout(() => {
+      void loadStockData(ticker)
+      setChatMessages([])
+      setChatInput(
+        `Tolong berikan kesimpulan sintesis untuk saham ${ticker}: evaluasi sinyal sesi intraday, rencana risiko stop loss/take profit, peta akumulasi broker, dan pantauan radar pasar.`,
+      )
+    }, 0)
+    return () => clearTimeout(timer)
   }, [ticker, loadStockData])
 
   // Fetch radar when reaching stage 3 or 4
   useEffect(() => {
     if (currentStage >= 3) {
-      void loadRadarData()
+      const timer = setTimeout(() => {
+        void loadRadarData()
+      }, 0)
+      return () => clearTimeout(timer)
     }
   }, [currentStage, loadRadarData])
 
@@ -262,50 +245,6 @@ export function DiscoverUnifiedExperience() {
     setCurrentStage(stage)
     syncUrl(ticker, stage)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
-
-  const handleSaveThesis = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!thesisText.trim()) return
-
-    setThesisSaving(true)
-    setThesisMessage('')
-
-    try {
-      const res = await saveResearchNoteAction(
-        ticker,
-        `snap-${ticker}-current`,
-        thesisText.trim(),
-        invalidationText.trim() || undefined,
-      )
-      if (res.success) {
-        setThesisMessage('Tesis riset berhasil disimpan ke portofolio Anda!')
-      } else if (res.error?.includes('AUTH_REQUIRED')) {
-        try {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(
-              `rasi_thesis_${ticker}`,
-              JSON.stringify({
-                thesis: thesisText.trim(),
-                invalidationTriggers: invalidationText.trim(),
-                updatedAt: new Date().toISOString(),
-              }),
-            )
-          }
-          setThesisMessage(
-            'Tesis tersimpan di browser Anda (Masuk dengan Google untuk sinkronisasi cloud).',
-          )
-        } catch {
-          setThesisMessage(res.error)
-        }
-      } else {
-        setThesisMessage(res.error || 'Gagal menyimpan tesis riset.')
-      }
-    } catch (err) {
-      setThesisMessage(err instanceof Error ? err.message : 'Terjadi kesalahan sistem.')
-    } finally {
-      setThesisSaving(false)
-    }
   }
 
   const handleSendChat = async (textToSend = chatInput) => {
@@ -341,24 +280,19 @@ export function DiscoverUnifiedExperience() {
     }
   }
 
-  const currentStockInfo =
-    POPULAR_STOCKS.find((s) => s.symbol === ticker) || {
-      symbol: ticker,
-      name: stockData?.companyName || ticker,
-      sector: 'Bursa Efek Indonesia',
-    }
+  const currentStockInfo = POPULAR_STOCKS.find((s) => s.symbol === ticker) || {
+    symbol: ticker,
+    name: stockData?.companyName || ticker,
+    sector: 'Bursa Efek Indonesia',
+  }
 
   // Filtered radar matches for this ticker
   const tickerSleepingGiants = useMemo(() => {
-    return (radarData?.sleepingGiants ?? []).filter(
-      (g: { ticker: string }) => g.ticker === ticker,
-    )
+    return (radarData?.sleepingGiants ?? []).filter((g: { ticker: string }) => g.ticker === ticker)
   }, [radarData, ticker])
 
   const tickerInsiderAlerts = useMemo(() => {
-    return (radarData?.insiderAlerts ?? []).filter(
-      (i: { ticker: string }) => i.ticker === ticker,
-    )
+    return (radarData?.insiderAlerts ?? []).filter((i: { ticker: string }) => i.ticker === ticker)
   }, [radarData, ticker])
 
   const STAGES = [
@@ -399,28 +333,26 @@ export function DiscoverUnifiedExperience() {
   // ── A. LANDING VIEW: PENGGUNA BELUM MEMILIH SAHAM ──
   if (!ticker) {
     return (
-      <div className="space-y-10 py-4 max-w-6xl mx-auto">
+      <div className="mx-auto max-w-6xl space-y-10 py-4">
         {/* 1. HERO BANNER */}
-        <div className="relative rounded-3xl border border-[var(--border-subtle)] bg-gradient-to-br from-[var(--bg-main)] via-[var(--surface-card)] to-[var(--bg-main)] p-8 sm:p-12 shadow-[var(--rasi-card-shadow)] text-center">
+        <div className="relative rounded-3xl border border-[var(--border-subtle)] bg-gradient-to-br from-[var(--bg-main)] via-[var(--surface-card)] to-[var(--bg-main)] p-8 text-center shadow-[var(--rasi-card-shadow)] sm:p-12">
           <div className="mx-auto max-w-3xl space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--rasi-primary)]/40 bg-[var(--rasi-primary)]/10 px-4 py-1.5 text-xs font-bold text-[var(--rasi-primary)]">
-              <Compass className="h-4 w-4" />
-              <span>Discover & Riset Terpandu IDX</span>
-            </div>
-
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[var(--rasi-text)]">
+            <h1 className="text-3xl font-black tracking-tight text-[var(--rasi-text)] sm:text-5xl">
               Pilih Saham yang Ingin Anda Riset
             </h1>
 
-            <p className="text-sm sm:text-base text-[var(--rasi-muted)] max-w-2xl mx-auto leading-relaxed">
+            <p className="mx-auto max-w-2xl text-sm leading-relaxed text-[var(--rasi-muted)] sm:text-base">
               Mulai eksplorasi terstruktur melalui 4 tahap riset terpadu: Evaluasi Sinyal & Risiko
               Sesi Intraday, Akumulasi Broker, Pantauan Radar Pasar, hingga Sintesis AI.
             </p>
 
             {/* Central Autocomplete Search Bar */}
-            <div ref={searchContainerRef} className="relative max-w-2xl mx-auto mt-6 z-40 text-left">
+            <div
+              ref={searchContainerRef}
+              className="relative z-40 mx-auto mt-6 max-w-2xl text-left"
+            >
               <div className="relative flex items-center rounded-2xl border-2 border-[var(--border-subtle)] bg-[var(--rasi-surface)] shadow-lg transition-colors focus-within:border-[var(--rasi-primary)]">
-                <div className="pl-4 pr-2 text-[var(--rasi-muted)]">
+                <div className="pr-2 pl-4 text-[var(--rasi-muted)]">
                   <Search className="h-5 w-5" />
                 </div>
                 <input
@@ -442,7 +374,7 @@ export function DiscoverUnifiedExperience() {
                     if (searchInput.trim()) setShowDropdown(true)
                   }}
                   onKeyDown={(e) => handleSearchKeyDown(e, 1)}
-                  className="w-full bg-transparent py-4 text-sm sm:text-base text-[var(--rasi-text)] placeholder-[var(--rasi-muted)] outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0"
+                  className="w-full bg-transparent py-4 text-sm text-[var(--rasi-text)] placeholder-[var(--rasi-muted)] ring-0 outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none sm:text-base"
                 />
                 {searchInput && (
                   <button
@@ -451,7 +383,7 @@ export function DiscoverUnifiedExperience() {
                       setSearchInput('')
                       setShowDropdown(false)
                     }}
-                    className="p-2 mr-2 text-[var(--rasi-muted)] hover:text-[var(--rasi-text)] rounded-xl hover:bg-[var(--rasi-muted-bg)] transition-colors outline-none focus:outline-none focus-visible:outline-none"
+                    className="mr-2 rounded-xl p-2 text-[var(--rasi-muted)] transition-colors outline-none hover:bg-[var(--rasi-muted-bg)] hover:text-[var(--rasi-text)] focus:outline-none focus-visible:outline-none"
                     title="Bersihkan pencarian"
                   >
                     <X className="h-4 w-4" />
@@ -461,16 +393,16 @@ export function DiscoverUnifiedExperience() {
 
               {/* Floating Dropdown Suggestion Menu (Tidak terpotong container) */}
               {showDropdown && (
-                <div className="absolute right-0 left-0 top-full mt-2 z-50 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] shadow-2xl backdrop-blur-xl overflow-hidden divide-y divide-[var(--border-subtle)] animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="animate-in fade-in slide-in-from-top-2 absolute top-full right-0 left-0 z-50 mt-2 divide-y divide-[var(--border-subtle)] overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] shadow-2xl backdrop-blur-xl duration-150">
                   {suggestions.length > 0 ? (
                     <>
-                      <div className="flex items-center justify-between px-4 py-2.5 bg-[var(--rasi-muted-bg)]/40 text-[11px] font-semibold text-[var(--rasi-muted)]">
+                      <div className="flex items-center justify-between bg-[var(--rasi-muted-bg)]/40 px-4 py-2.5 text-[11px] font-semibold text-[var(--rasi-muted)]">
                         <span>Ditemukan {suggestions.length} Saham</span>
-                        <span className="hidden sm:inline text-[10px]">
+                        <span className="hidden text-[10px] sm:inline">
                           Gunakan tombol ↑ ↓ untuk memilih, tekan Enter
                         </span>
                       </div>
-                      <div className="max-h-80 overflow-y-auto divide-y divide-[var(--border-subtle)]">
+                      <div className="max-h-80 divide-y divide-[var(--border-subtle)] overflow-y-auto">
                         {suggestions.map((item, idx) => {
                           const isHighlighted = idx === selectedIndex
                           return (
@@ -479,28 +411,28 @@ export function DiscoverUnifiedExperience() {
                               type="button"
                               onClick={() => handleSelectTicker(item.symbol, 1)}
                               onMouseEnter={() => setSelectedIndex(idx)}
-                              className={`w-full flex items-center justify-between p-3.5 text-left transition-colors group ${
+                              className={`group flex w-full items-center justify-between p-3.5 text-left transition-colors ${
                                 isHighlighted
-                                  ? 'bg-[var(--rasi-primary)]/15 border-l-4 border-l-[var(--rasi-primary)]'
+                                  ? 'border-l-4 border-l-[var(--rasi-primary)] bg-[var(--rasi-primary)]/15'
                                   : 'hover:bg-[var(--rasi-muted-bg)]'
                               }`}
                             >
-                              <div className="flex items-center gap-3.5 min-w-0">
-                                <div className="flex h-10 w-14 shrink-0 items-center justify-center rounded-xl bg-[var(--rasi-primary)]/10 font-mono font-black text-sm text-[var(--rasi-primary)] group-hover:scale-105 transition-transform border border-[var(--rasi-primary)]/20 shadow-xs">
+                              <div className="flex min-w-0 items-center gap-3.5">
+                                <div className="flex h-10 w-14 shrink-0 items-center justify-center rounded-xl border border-[var(--rasi-primary)]/20 bg-[var(--rasi-primary)]/10 font-mono text-sm font-black text-[var(--rasi-primary)] shadow-xs transition-transform group-hover:scale-105">
                                   {item.symbol}
                                 </div>
-                                <div className="flex flex-col min-w-0">
-                                  <span className="text-sm font-bold text-[var(--rasi-text)] truncate">
+                                <div className="flex min-w-0 flex-col">
+                                  <span className="truncate text-sm font-bold text-[var(--rasi-text)]">
                                     {item.name}
                                   </span>
-                                  <span className="text-[11px] text-[var(--rasi-muted)] font-medium">
+                                  <span className="text-[11px] font-medium text-[var(--rasi-muted)]">
                                     {item.sector}
                                   </span>
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-1.5 shrink-0 pl-3">
-                                <span className="rounded-lg bg-[var(--rasi-surface)] border border-[var(--border-subtle)] px-2.5 py-1 text-[11px] font-bold text-[var(--rasi-muted)] group-hover:text-[var(--rasi-primary)] group-hover:border-[var(--rasi-primary)]/40 transition-colors flex items-center gap-1 shadow-xs">
+                              <div className="flex shrink-0 items-center gap-1.5 pl-3">
+                                <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--rasi-muted)] transition-colors group-hover:text-[var(--rasi-primary)]">
                                   <span>Riset</span>
                                   <ArrowRight className="h-3 w-3" />
                                 </span>
@@ -511,9 +443,14 @@ export function DiscoverUnifiedExperience() {
                       </div>
                     </>
                   ) : (
-                    <div className="p-6 text-center text-xs text-[var(--rasi-muted)] space-y-1">
-                      <p className="font-semibold text-[var(--rasi-text)]">Tidak ada saham yang cocok</p>
-                      <p>Kode saham atau nama &quot;{searchInput}&quot; tidak ditemukan di daftar emiten.</p>
+                    <div className="space-y-1 p-6 text-center text-xs text-[var(--rasi-muted)]">
+                      <p className="font-semibold text-[var(--rasi-text)]">
+                        Tidak ada saham yang cocok
+                      </p>
+                      <p>
+                        Kode saham atau nama &quot;{searchInput}&quot; tidak ditemukan di daftar
+                        emiten.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -524,12 +461,10 @@ export function DiscoverUnifiedExperience() {
 
         {/* 2. POPULAR CATEGORIES & STOCK CARDS */}
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
             <div>
-              <h2 className="text-xl font-black text-[var(--rasi-text)]">
-                Pilihan Saham Populer
-              </h2>
-              <p className="text-xs sm:text-sm text-[var(--rasi-muted)]">
+              <h2 className="text-xl font-black text-[var(--rasi-text)]">Pilihan Saham Populer</h2>
+              <p className="text-xs text-[var(--rasi-muted)] sm:text-sm">
                 Klik kartu saham untuk langsung membuka 4 tahapan riset lengkapnya.
               </p>
             </div>
@@ -567,7 +502,7 @@ export function DiscoverUnifiedExperience() {
           </div>
 
           {/* Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {displayStocks.map((stock) => (
               <button
                 key={stock.symbol}
@@ -576,22 +511,22 @@ export function DiscoverUnifiedExperience() {
                 className="group relative flex flex-col justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-5 text-left transition-all duration-200 hover:-translate-y-1 hover:border-[var(--rasi-primary)] hover:shadow-lg"
               >
                 <div>
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="font-mono text-xl font-black tracking-tight text-[var(--rasi-text)] group-hover:text-[var(--rasi-primary)] transition-colors">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <span className="font-mono text-xl font-black tracking-tight text-[var(--rasi-text)] transition-colors group-hover:text-[var(--rasi-primary)]">
                       {stock.symbol}
                     </span>
-                    <span className="rounded-lg bg-[var(--rasi-primary)]/10 px-2 py-0.5 text-[10px] font-bold text-[var(--rasi-primary)] border border-[var(--rasi-primary)]/20">
+                    <span className="text-xs font-semibold text-[var(--rasi-muted)]">
                       {stock.sector}
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-[var(--rasi-muted)] line-clamp-2 leading-relaxed">
+                  <p className="line-clamp-2 text-xs leading-relaxed text-[var(--rasi-muted)] sm:text-sm">
                     {stock.name}
                   </p>
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs font-bold text-[var(--rasi-primary)]">
+                <div className="mt-5 flex items-center justify-between border-t border-[var(--border-subtle)] pt-4 text-xs font-bold text-[var(--rasi-primary)]">
                   <span>Mulai Riset Saham</span>
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--rasi-primary)]/10 group-hover:bg-[var(--rasi-primary)] group-hover:text-[var(--rasi-primary-text)] transition-all">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--rasi-primary)]/10 transition-all group-hover:bg-[var(--rasi-primary)] group-hover:text-[var(--rasi-primary-text)]">
                     <ArrowRight className="h-4 w-4" />
                   </div>
                 </div>
@@ -602,35 +537,33 @@ export function DiscoverUnifiedExperience() {
 
         {/* 3. VISUAL 4-STEP ROADMAP EXPLAINER */}
         <div className="rounded-3xl border border-[var(--border-subtle)] bg-gradient-to-br from-[var(--surface-card)] to-[var(--bg-main)] p-6 sm:p-8">
-          <div className="text-center max-w-xl mx-auto mb-8">
-            <h3 className="text-lg sm:text-xl font-black text-[var(--rasi-text)]">
+          <div className="mx-auto mb-8 max-w-xl text-center">
+            <h3 className="text-lg font-black text-[var(--rasi-text)] sm:text-xl">
               Bagaimana Alur Riset 4 Langkah Bekerja?
             </h3>
-            <p className="text-xs sm:text-sm text-[var(--rasi-muted)] mt-1">
+            <p className="mt-1 text-xs text-[var(--rasi-muted)] sm:text-sm">
               Setiap saham yang Anda pilih akan dianalisis secara berurutan dan terukur:
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {STAGES.map((s) => {
               const Icon = s.icon
               return (
                 <div
                   key={s.num}
-                  className="flex flex-col items-center text-center p-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--rasi-surface)]/60"
+                  className="flex flex-col items-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--rasi-surface)]/60 p-4 text-center"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--rasi-primary)]/10 text-[var(--rasi-primary)] font-black text-sm mb-3">
+                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--rasi-primary)]/10 text-sm font-black text-[var(--rasi-primary)]">
                     <Icon className="h-5 w-5" />
                   </div>
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--rasi-primary)] mb-1">
+                  <span className="mb-1 font-mono text-[10px] font-bold tracking-wider text-[var(--rasi-primary)] uppercase">
                     Tahap {s.num}
                   </span>
-                  <h4 className="font-bold text-xs sm:text-sm text-[var(--rasi-text)] mb-1">
+                  <h4 className="mb-1 text-xs font-bold text-[var(--rasi-text)] sm:text-sm">
                     {s.title}
                   </h4>
-                  <p className="text-[11px] text-[var(--rasi-muted)] leading-relaxed">
-                    {s.desc}
-                  </p>
+                  <p className="text-[11px] leading-relaxed text-[var(--rasi-muted)]">{s.desc}</p>
                 </div>
               )
             })}
@@ -644,17 +577,13 @@ export function DiscoverUnifiedExperience() {
   return (
     <div className="space-y-8 py-2">
       {/* ── 1. TOP HEADER & INSTANT STOCK SELECTOR ── */}
-      <div className="relative rounded-3xl border border-[var(--border-subtle)] bg-gradient-to-br from-[var(--bg-main)] via-[var(--surface-card)] to-[var(--bg-main)] p-6 sm:p-8 shadow-[var(--rasi-card-shadow)]">
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[var(--rasi-primary)]/40 bg-[var(--rasi-primary)]/10 px-3 py-1 text-xs font-bold text-[var(--rasi-primary)]">
-              <Compass className="h-3.5 w-3.5" />
-              <span>Discover & Riset Terpandu RASI</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[var(--rasi-text)]">
+      <div className="relative rounded-3xl border border-[var(--border-subtle)] bg-gradient-to-br from-[var(--bg-main)] via-[var(--surface-card)] to-[var(--bg-main)] p-6 shadow-[var(--rasi-card-shadow)] sm:p-8">
+        <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
+          <div className="max-w-2xl space-y-2">
+            <h1 className="text-2xl font-black tracking-tight text-[var(--rasi-text)] sm:text-3xl">
               Riset Saham 4 Langkah: Mudah, Jelas & Terukur
             </h1>
-            <p className="text-xs sm:text-sm text-[var(--rasi-muted)] leading-relaxed">
+            <p className="text-xs leading-relaxed text-[var(--rasi-muted)] sm:text-sm">
               Panduan terstruktur meneliti saham dari evaluasi sinyal sesi intraday, rencana stop
               loss/take profit, siapa broker yang memborong, radar berita, hingga sintesis AI.
             </p>
@@ -662,8 +591,8 @@ export function DiscoverUnifiedExperience() {
 
           {/* Active Stock Badge & Ganti Saham Action */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-3 bg-[var(--rasi-surface)]/80 backdrop-blur-md p-3.5 rounded-2xl border border-[var(--border-subtle)] self-start md:self-auto shrink-0">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--rasi-primary)] text-[var(--rasi-primary-text)] font-black text-lg font-mono shadow-sm">
+            <div className="flex shrink-0 items-center gap-3 self-start rounded-2xl border border-[var(--border-subtle)] bg-[var(--rasi-surface)]/80 p-3.5 backdrop-blur-md md:self-auto">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--rasi-primary)] font-mono text-lg font-black text-[var(--rasi-primary-text)] shadow-sm">
                 {ticker.slice(0, 2)}
               </div>
               <div>
@@ -671,11 +600,9 @@ export function DiscoverUnifiedExperience() {
                   <span className="font-mono text-xl font-black text-[var(--rasi-text)]">
                     {ticker}
                   </span>
-                  <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/20">
-                    IDX Aktif
-                  </span>
+                  <span className="text-xs font-bold text-emerald-400">• IDX Aktif</span>
                 </div>
-                <p className="text-xs text-[var(--rasi-muted)] truncate max-w-[180px]">
+                <p className="max-w-[180px] truncate text-xs text-[var(--rasi-muted)]">
                   {stockData?.companyName || currentStockInfo.name}
                 </p>
               </div>
@@ -695,7 +622,7 @@ export function DiscoverUnifiedExperience() {
               type="button"
               onClick={handleResetTicker}
               title="Pilih saham lain untuk diriset"
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--rasi-surface)]/80 hover:bg-[var(--surface-card)] px-3.5 py-3 text-xs font-bold text-[var(--rasi-muted)] hover:border-[var(--rasi-primary)] hover:text-[var(--rasi-text)] transition-all shadow-sm"
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--rasi-surface)]/80 px-3.5 py-3 text-xs font-bold text-[var(--rasi-muted)] shadow-sm transition-all hover:border-[var(--rasi-primary)] hover:bg-[var(--surface-card)] hover:text-[var(--rasi-text)]"
             >
               <RefreshCw className="h-4 w-4" />
               <span className="hidden sm:inline">Ganti Saham</span>
@@ -704,9 +631,9 @@ export function DiscoverUnifiedExperience() {
         </div>
 
         {/* Quick Ticker Chips & Search Bar */}
-        <div className="mt-6 pt-5 border-t border-[var(--border-subtle)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="mt-6 flex flex-col justify-between gap-4 border-t border-[var(--border-subtle)] pt-5 sm:flex-row sm:items-center">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-xs text-[var(--rasi-muted)] font-medium mr-1 hidden sm:inline">
+            <span className="mr-1 hidden text-xs font-medium text-[var(--rasi-muted)] sm:inline">
               Pilih Cepat:
             </span>
             {FEATURED_TICKERS.map((item) => {
@@ -716,9 +643,9 @@ export function DiscoverUnifiedExperience() {
                   key={item.symbol}
                   type="button"
                   onClick={() => handleSelectTicker(item.symbol)}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-mono font-bold transition-all ${
+                  className={`rounded-xl px-3 py-1.5 font-mono text-xs font-bold transition-all ${
                     isActive
-                      ? 'bg-[var(--rasi-primary)] text-[var(--rasi-primary-text)] shadow-sm scale-105 ring-2 ring-[var(--rasi-primary)]/30'
+                      ? 'scale-105 bg-[var(--rasi-primary)] text-[var(--rasi-primary-text)] shadow-sm ring-2 ring-[var(--rasi-primary)]/30'
                       : 'border border-[var(--border-subtle)] bg-[var(--surface-card)] text-[var(--rasi-muted)] hover:border-[var(--rasi-border)] hover:text-[var(--rasi-text)]'
                   }`}
                 >
@@ -729,9 +656,9 @@ export function DiscoverUnifiedExperience() {
           </div>
 
           {/* Autocomplete Search input */}
-          <div ref={headerSearchRef} className="relative w-full sm:w-72 z-40 text-left">
+          <div ref={headerSearchRef} className="relative z-40 w-full text-left sm:w-72">
             <div className="relative flex items-center rounded-xl border border-[var(--border-subtle)] bg-[var(--rasi-surface)] shadow-xs transition-colors focus-within:border-[var(--rasi-primary)]">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--rasi-muted)] pointer-events-none" />
+              <Search className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-[var(--rasi-muted)]" />
               <input
                 type="text"
                 placeholder="Cari kode saham lain…"
@@ -751,7 +678,7 @@ export function DiscoverUnifiedExperience() {
                   if (searchInput.trim()) setShowDropdown(true)
                 }}
                 onKeyDown={(e) => handleSearchKeyDown(e, currentStage)}
-                className="w-full bg-transparent py-2 pr-8 pl-9 text-xs text-[var(--rasi-text)] placeholder-[var(--rasi-muted)] outline-none focus:outline-none focus-visible:outline-none ring-0 focus:ring-0 focus-visible:ring-0"
+                className="w-full bg-transparent py-2 pr-8 pl-9 text-xs text-[var(--rasi-text)] placeholder-[var(--rasi-muted)] ring-0 outline-none focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
               />
               {searchInput && (
                 <button
@@ -760,7 +687,7 @@ export function DiscoverUnifiedExperience() {
                     setSearchInput('')
                     setShowDropdown(false)
                   }}
-                  className="absolute right-2 text-[var(--rasi-muted)] hover:text-[var(--rasi-text)] outline-none focus:outline-none focus-visible:outline-none"
+                  className="absolute right-2 text-[var(--rasi-muted)] outline-none hover:text-[var(--rasi-text)] focus:outline-none focus-visible:outline-none"
                   title="Bersihkan"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -769,7 +696,7 @@ export function DiscoverUnifiedExperience() {
             </div>
 
             {showDropdown && suggestions.length > 0 && (
-              <div className="absolute right-0 left-0 top-full mt-1.5 z-50 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] shadow-2xl overflow-hidden divide-y divide-[var(--border-subtle)] max-h-72 overflow-y-auto animate-in fade-in duration-100">
+              <div className="animate-in fade-in absolute top-full right-0 left-0 z-50 mt-1.5 max-h-72 divide-y divide-[var(--border-subtle)] overflow-hidden overflow-y-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] shadow-2xl duration-100">
                 {suggestions.map((item, idx) => {
                   const isHighlighted = idx === selectedIndex
                   return (
@@ -778,21 +705,23 @@ export function DiscoverUnifiedExperience() {
                       type="button"
                       onClick={() => handleSelectTicker(item.symbol, currentStage)}
                       onMouseEnter={() => setSelectedIndex(idx)}
-                      className={`w-full flex items-center justify-between p-2.5 text-left text-xs transition-colors group ${
+                      className={`group flex w-full items-center justify-between p-2.5 text-left text-xs transition-colors ${
                         isHighlighted
-                          ? 'bg-[var(--rasi-primary)]/15 border-l-2 border-l-[var(--rasi-primary)]'
+                          ? 'border-l-2 border-l-[var(--rasi-primary)] bg-[var(--rasi-primary)]/15'
                           : 'hover:bg-[var(--rasi-muted-bg)]'
                       }`}
                     >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-mono font-bold text-[var(--rasi-primary)] shrink-0">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="shrink-0 font-mono font-bold text-[var(--rasi-primary)]">
                           {item.symbol}
                         </span>
-                        <span className="text-[var(--rasi-text)] truncate max-w-[130px]">
+                        <span className="max-w-[130px] truncate text-[var(--rasi-text)]">
                           {item.name}
                         </span>
                       </div>
-                      <span className="text-[10px] text-[var(--rasi-muted)] shrink-0">{item.sector}</span>
+                      <span className="shrink-0 text-[10px] text-[var(--rasi-muted)]">
+                        {item.sector}
+                      </span>
                     </button>
                   )
                 })}
@@ -803,9 +732,9 @@ export function DiscoverUnifiedExperience() {
       </div>
 
       {/* ── 2. INTERACTIVE 5-STAGE NAVIGATION STEPPER ── */}
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-3 sm:p-4 shadow-[var(--rasi-card-shadow)] space-y-3">
+      <div className="space-y-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-3 shadow-[var(--rasi-card-shadow)] sm:p-4">
         {/* Progress Bar */}
-        <div className="flex items-center justify-between text-xs text-[var(--rasi-muted)] px-1">
+        <div className="flex items-center justify-between px-1 text-xs text-[var(--rasi-muted)]">
           <span className="font-semibold text-[var(--rasi-text)]">
             Tahap {currentStage} dari 5: {STAGES[currentStage - 1].title}
           </span>
@@ -813,7 +742,7 @@ export function DiscoverUnifiedExperience() {
             {currentStage * 20}% Selesai
           </span>
         </div>
-        <div className="w-full h-1.5 rounded-full bg-[var(--rasi-muted-bg)] overflow-hidden">
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--rasi-muted-bg)]">
           <div
             className="h-full bg-gradient-to-r from-[var(--rasi-primary)] to-[var(--rasi-accent)] transition-all duration-300"
             style={{ width: `${currentStage * 20}%` }}
@@ -821,51 +750,44 @@ export function DiscoverUnifiedExperience() {
         </div>
 
         {/* Stage Tabs */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+        <div className="grid grid-cols-2 gap-2 pt-1 sm:grid-cols-4">
           {STAGES.map((s) => {
             const isActive = s.num === currentStage
             const isPassed = s.num < currentStage
-            const Icon = s.icon
 
             return (
               <button
                 key={s.num}
                 type="button"
                 onClick={() => handleStageChange(s.num as 1 | 2 | 3 | 4)}
-                className={`group flex items-start gap-2.5 p-3 rounded-xl border text-left transition-all ${
+                className={`group flex items-start gap-2.5 rounded-xl border p-3 text-left transition-all ${
                   isActive
                     ? 'border-[var(--rasi-primary)] bg-[var(--rasi-primary)]/10 shadow-sm ring-1 ring-[var(--rasi-primary)]/30'
-                    : isPassed
-                      ? 'border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50'
-                      : 'border-[var(--border-subtle)] bg-[var(--surface-card)] hover:border-[var(--rasi-border)] hover:bg-[var(--rasi-muted-bg)]/40'
+                    : 'border-[var(--border-subtle)] bg-[var(--surface-card)] shadow-xs hover:border-[var(--rasi-border)] hover:bg-[var(--rasi-muted-bg)]/40'
                 }`}
               >
                 <span
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold font-mono ${
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg font-mono text-xs font-bold ${
                     isActive
                       ? 'bg-[var(--rasi-primary)] text-[var(--rasi-primary-text)]'
                       : isPassed
-                        ? 'bg-emerald-500/20 text-emerald-400'
+                        ? 'bg-emerald-500 text-white shadow-xs dark:bg-emerald-600'
                         : 'bg-[var(--rasi-muted-bg)] text-[var(--rasi-muted)]'
                   }`}
                 >
-                  {isPassed ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> : s.num}
+                  {isPassed ? <Check className="h-3.5 w-3.5 stroke-[3]" /> : s.num}
                 </span>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1">
                     <span
-                      className={`text-xs font-bold truncate ${
-                        isActive
-                          ? 'text-[var(--rasi-primary)]'
-                          : isPassed
-                            ? 'text-emerald-400'
-                            : 'text-[var(--rasi-text)]'
+                      className={`truncate text-xs font-bold ${
+                        isActive ? 'text-[var(--rasi-primary)]' : 'text-[var(--rasi-text)]'
                       }`}
                     >
                       {s.title}
                     </span>
                   </div>
-                  <p className="text-[10px] text-[var(--rasi-muted)] truncate">{s.desc}</p>
+                  <p className="truncate text-[10px] text-[var(--rasi-muted)]">{s.desc}</p>
                 </div>
               </button>
             )
@@ -879,18 +801,18 @@ export function DiscoverUnifiedExperience() {
         {currentStage === 1 && (
           <div className="space-y-6">
             {/* Friendly Explanation Card */}
-            <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5">
+            <div className="flex flex-col items-start justify-between gap-3.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-xs sm:flex-row sm:items-center sm:p-5">
               <div className="flex items-start gap-3.5">
-                <Lightbulb className="h-5 w-5 text-sky-400 shrink-0 mt-0.5" />
-                <div className="space-y-1 text-xs text-[var(--rasi-muted)] leading-relaxed">
-                  <span className="font-bold text-[var(--rasi-text)] text-sm block">
+                <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-[var(--rasi-primary)]" />
+                <div className="space-y-1 text-xs leading-relaxed text-[var(--rasi-muted)]">
+                  <span className="block text-sm font-bold text-[var(--rasi-text)]">
                     Cara Membaca Sinyal & Batasan Risiko ({ticker})
                   </span>
                   <p>
                     Sistem mengevaluasi arah tren pada sesi perdagangan bursa (Sesi I & II). Di bawah
-                    ini Anda dapat melihat data harga live, batas pengaman modal (<strong>Stop Loss</strong>), target
-                    keuntungan (<strong>TP1 & TP2</strong>), serta mensimulasikan jumlah lot yang aman
-                    dibeli sesuai modal Anda.
+                    ini Anda dapat melihat data harga live, batas pengaman modal (
+                    <strong>Stop Loss</strong>), target keuntungan (<strong>TP1 & TP2</strong>), serta
+                    mensimulasikan jumlah lot yang aman dibeli sesuai modal Anda.
                   </p>
                 </div>
               </div>
@@ -1148,9 +1070,9 @@ export function DiscoverUnifiedExperience() {
             />
 
             {/* Next Step Action Button */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-5 shadow-[var(--rasi-card-shadow)]">
+            <div className="flex flex-col items-center justify-between gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-5 shadow-[var(--rasi-card-shadow)] sm:flex-row">
               <div>
-                <span className="text-[11px] font-bold text-[var(--rasi-primary)] uppercase tracking-wider">
+                <span className="text-[11px] font-bold tracking-wider text-[var(--rasi-primary)] uppercase">
                   Langkah Selesai
                 </span>
                 <p className="text-xs text-[var(--rasi-muted)]">
@@ -1173,23 +1095,24 @@ export function DiscoverUnifiedExperience() {
         {/* ────── STAGE 2: AKUMULASI BROKER (TABEL PERBANDINGAN) ────── */}
         {currentStage === 2 && (
           <div className="space-y-6">
-            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 sm:p-5 flex items-start gap-3.5">
-              <Lightbulb className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
-              <div className="space-y-1 text-xs text-[var(--rasi-muted)] leading-relaxed">
-                <span className="font-bold text-[var(--rasi-text)] text-sm block">
+            <div className="flex items-start gap-3.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-xs sm:p-5">
+              <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-[var(--rasi-primary)]" />
+              <div className="space-y-1 text-xs leading-relaxed text-[var(--rasi-muted)]">
+                <span className="block text-sm font-bold text-[var(--rasi-text)]">
                   Cara Membaca Akumulasi Broker ({ticker})
                 </span>
                 <p>
                   Periksa siapa yang berada di balik transaksi. Kolom hijau menunjukkan sekuritas
                   yang paling banyak memborong saham ini (<strong>Akumulasi</strong>), sedangkan
-                  kolom merah menunjukkan pihak yang sedang melepas barang (<strong>Distribusi</strong>
+                  kolom merah menunjukkan pihak yang sedang melepas barang (
+                  <strong>Distribusi</strong>
                   ). Perhatikan apakah broker institusi sedang menyerap barang dari investor ritel.
                 </p>
               </div>
             </div>
 
             {loadingStock ? (
-              <div className="py-16 text-center text-xs text-[var(--rasi-muted)] space-y-2">
+              <div className="space-y-2 py-16 text-center text-xs text-[var(--rasi-muted)]">
                 <Loader2 className="mx-auto h-6 w-6 animate-spin text-[var(--rasi-primary)]" />
                 <p>Memuat data transaksi broker {ticker}…</p>
               </div>
@@ -1232,22 +1155,23 @@ export function DiscoverUnifiedExperience() {
         {/* ────── STAGE 3: RADAR PASAR & KATALIS BERITA ────── */}
         {currentStage === 3 && (
           <div className="space-y-6">
-            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 sm:p-5 flex items-start gap-3.5">
-              <Lightbulb className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
-              <div className="space-y-1 text-xs text-[var(--rasi-muted)] leading-relaxed">
-                <span className="font-bold text-[var(--rasi-text)] text-sm block">
+            <div className="flex items-start gap-3.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-xs sm:p-5">
+              <Lightbulb className="mt-0.5 h-5 w-5 shrink-0 text-[var(--rasi-primary)]" />
+              <div className="space-y-1 text-xs leading-relaxed text-[var(--rasi-muted)]">
+                <span className="block text-sm font-bold text-[var(--rasi-text)]">
                   Apa yang Dipantau di Radar Pasar?
                 </span>
                 <p>
                   Radar RASI memindai berita penting yang dampaknya belum sepenuhnya tercermin pada
                   harga (<strong>Sleeping Giants</strong>), serta memeriksa laporan aksi transaksi
-                  oleh komisaris, direksi, atau pemegang saham pengendali (<strong>Insider Filings</strong>).
+                  oleh komisaris, direksi, atau pemegang saham pengendali (
+                  <strong>Insider Filings</strong>).
                 </p>
               </div>
             </div>
 
             {loadingRadar ? (
-              <div className="py-16 text-center text-xs text-[var(--rasi-muted)] space-y-2">
+              <div className="space-y-2 py-16 text-center text-xs text-[var(--rasi-muted)]">
                 <Loader2 className="mx-auto h-6 w-6 animate-spin text-[var(--rasi-primary)]" />
                 <p>Memindai radar pasar dan berita terkini {ticker}…</p>
               </div>
@@ -1268,17 +1192,19 @@ export function DiscoverUnifiedExperience() {
                       ) => (
                         <div
                           key={idx}
-                          className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 space-y-2"
+                          className="space-y-2 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="font-mono font-bold text-emerald-400 text-sm">
+                            <span className="font-mono text-sm font-bold text-emerald-400">
                               {item.ticker} — Berita Positif Terdeteksi
                             </span>
-                            <span className="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
+                            <span className="text-xs font-bold text-emerald-400">
                               Skor Dampak: +{item.impactScore}
                             </span>
                           </div>
-                          <h4 className="text-sm font-bold text-[var(--rasi-text)]">{item.headline}</h4>
+                          <h4 className="text-sm font-bold text-[var(--rasi-text)]">
+                            {item.headline}
+                          </h4>
                           <p className="text-xs text-[var(--rasi-muted)]">{item.verdict}</p>
                         </div>
                       ),
@@ -1294,39 +1220,38 @@ export function DiscoverUnifiedExperience() {
                         },
                         idx: number,
                       ) => (
-                      <div
-                        key={idx}
-                        className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 space-y-2"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono font-bold text-amber-400 text-sm">
-                            {item.ticker} — Transaksi Pemegang Saham Besar
-                          </span>
-                          <span
-                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                              item.action === 'BUY'
-                                ? 'bg-emerald-500/20 text-emerald-400'
-                                : 'bg-rose-500/20 text-rose-400'
-                            }`}
-                          >
-                            {item.action === 'BUY' ? 'Pembelian Saham' : 'Penjualan Saham'}
-                          </span>
+                        <div
+                          key={idx}
+                          className="space-y-2 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5"
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-sm font-bold text-amber-400">
+                              {item.ticker} — Transaksi Pemegang Saham Besar
+                            </span>
+                            <span
+                              className={`text-xs font-bold ${
+                                item.action === 'BUY' ? 'text-emerald-400' : 'text-rose-400'
+                              }`}
+                            >
+                              {item.action === 'BUY' ? 'Pembelian Saham' : 'Penjualan Saham'}
+                            </span>
+                          </div>
+                          <p className="text-xs font-semibold text-[var(--rasi-text)]">
+                            Pelaku: {item.holderName}
+                          </p>
+                          <p className="text-xs text-[var(--rasi-muted)]">{item.summary}</p>
                         </div>
-                        <p className="text-xs font-semibold text-[var(--rasi-text)]">
-                          Pelaku: {item.holderName}
-                        </p>
-                        <p className="text-xs text-[var(--rasi-muted)]">{item.summary}</p>
-                      </div>
-                    ))}
+                      ),
+                    )}
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-6 text-center space-y-2 shadow-[var(--rasi-card-shadow)]">
-                    <ShieldCheck className="h-8 w-8 text-emerald-400 mx-auto" />
+                  <div className="space-y-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-6 text-center shadow-[var(--rasi-card-shadow)]">
+                    <ShieldCheck className="mx-auto h-8 w-8 text-emerald-400" />
                     <div>
                       <h4 className="text-sm font-bold text-[var(--rasi-text)]">
                         Kondisi Radar Saham {ticker} Terjaga Baik
                       </h4>
-                      <p className="text-xs text-[var(--rasi-muted)] max-w-md mx-auto mt-1 leading-relaxed">
+                      <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-[var(--rasi-muted)]">
                         Tidak terdeteksi aksi jual agresif oleh orang dalam (insider) ataupun
                         anomali berita negatif pada saham {ticker}. Sentimen pasar terpantau stabil.
                       </p>
@@ -1340,18 +1265,18 @@ export function DiscoverUnifiedExperience() {
                     <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
                       <div className="flex items-center gap-2">
                         <FileText className="h-4 w-4 text-[var(--rasi-primary)]" />
-                        <h4 className="text-xs sm:text-sm font-bold text-[var(--rasi-text)]">
+                        <h4 className="text-xs font-bold text-[var(--rasi-text)] sm:text-sm">
                           Arus Berita Terkini Emiten: {ticker} (Data Resmi Sectors API)
                         </h4>
                       </div>
-                      <span className="text-[10px] font-mono text-[var(--rasi-muted)]">
+                      <span className="font-mono text-[10px] text-[var(--rasi-muted)]">
                         {stockData.envelopes.news.data.length} Berita
                       </span>
                     </div>
 
                     <div className="divide-y divide-[var(--border-subtle)]">
                       {stockData.envelopes.news.data.slice(0, 4).map((item, idx) => (
-                        <div key={idx} className="py-3 first:pt-1 last:pb-0 space-y-1">
+                        <div key={idx} className="space-y-1 py-3 first:pt-1 last:pb-0">
                           <div className="flex items-center justify-between text-[11px] text-[var(--rasi-muted)]">
                             <span className="font-semibold text-[var(--rasi-primary)]">
                               {item.source}
@@ -1366,11 +1291,11 @@ export function DiscoverUnifiedExperience() {
                                 : 'Terkini'}
                             </span>
                           </div>
-                          <h5 className="text-xs sm:text-sm font-bold text-[var(--rasi-text)] leading-snug">
+                          <h5 className="text-xs leading-snug font-bold text-[var(--rasi-text)] sm:text-sm">
                             {item.title}
                           </h5>
                           {item.body && (
-                            <p className="text-[11px] text-[var(--rasi-muted)] line-clamp-2 leading-relaxed">
+                            <p className="line-clamp-2 text-[11px] leading-relaxed text-[var(--rasi-muted)]">
                               {item.body}
                             </p>
                           )}
@@ -1381,57 +1306,58 @@ export function DiscoverUnifiedExperience() {
                 )}
 
                 {/* 2. Real Corporate Filings & Insider Activity from IDX */}
-                {stockData?.envelopes?.filings?.data && stockData.envelopes.filings.data.length > 0 && (
-                  <div className="space-y-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-5 shadow-[var(--rasi-card-shadow)]">
-                    <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-amber-400" />
-                        <h4 className="text-xs sm:text-sm font-bold text-[var(--rasi-text)]">
-                          Keterbukaan Informasi & Aksi Orang Dalam (IDX Filings)
-                        </h4>
+                {stockData?.envelopes?.filings?.data &&
+                  stockData.envelopes.filings.data.length > 0 && (
+                    <div className="space-y-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-5 shadow-[var(--rasi-card-shadow)]">
+                      <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-4 w-4 text-[var(--rasi-primary)]" />
+                          <h4 className="text-xs font-bold text-[var(--rasi-text)] sm:text-sm">
+                            Keterbukaan Informasi & Aksi Orang Dalam (IDX Filings)
+                          </h4>
+                        </div>
+                        <span className="font-mono text-[10px] text-[var(--rasi-muted)]">
+                          {stockData.envelopes.filings.data.length} Laporan
+                        </span>
                       </div>
-                      <span className="text-[10px] font-mono text-[var(--rasi-muted)]">
-                        {stockData.envelopes.filings.data.length} Laporan
-                      </span>
-                    </div>
 
-                    <div className="divide-y divide-[var(--border-subtle)]">
-                      {stockData.envelopes.filings.data.slice(0, 3).map((item, idx) => (
-                        <div key={idx} className="py-3 first:pt-1 last:pb-0 space-y-1">
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="font-mono font-bold text-[var(--rasi-text)]">
-                              {item.holder_name || item.source || 'Pelapor Terdaftar'}
-                            </span>
-                            {item.transaction_type && (
-                              <span
-                                className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                                  item.transaction_type.toLowerCase() === 'buy'
-                                    ? 'bg-emerald-500/10 text-emerald-400'
-                                    : 'bg-rose-500/10 text-rose-400'
-                                }`}
-                              >
-                                {item.transaction_type.toUpperCase()}
+                      <div className="divide-y divide-[var(--border-subtle)]">
+                        {stockData.envelopes.filings.data.slice(0, 3).map((item, idx) => (
+                          <div key={idx} className="space-y-1 py-3 first:pt-1 last:pb-0">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="font-mono font-bold text-[var(--rasi-text)]">
+                                {item.holder_name || item.source || 'Pelapor Terdaftar'}
+                              </span>
+                              {item.transaction_type && (
+                                <span
+                                  className={`text-xs font-bold ${
+                                    item.transaction_type.toLowerCase() === 'buy'
+                                      ? 'text-emerald-400'
+                                      : 'text-rose-400'
+                                  }`}
+                                >
+                                  {item.transaction_type.toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-[var(--rasi-muted)]">
+                              {item.title || item.body || 'Laporan kepemilikan saham rutin BEI'}
+                            </p>
+                            {item.timestamp && (
+                              <span className="block text-[10px] text-[var(--rasi-muted)]">
+                                Tanggal:{' '}
+                                {new Date(item.timestamp).toLocaleDateString('id-ID', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-[var(--rasi-muted)]">
-                            {item.title || item.body || 'Laporan kepemilikan saham rutin BEI'}
-                          </p>
-                          {item.timestamp && (
-                            <span className="text-[10px] text-[var(--rasi-muted)] block">
-                              Tanggal:{' '}
-                              {new Date(item.timestamp).toLocaleDateString('id-ID', {
-                                day: 'numeric',
-                                month: 'short',
-                                year: 'numeric',
-                              })}
-                            </span>
-                          )}
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             )}
 
@@ -1460,10 +1386,10 @@ export function DiscoverUnifiedExperience() {
         {/* ────── STAGE 4: ASISTEN AI RASI (SINTESIS AKHIR) ────── */}
         {currentStage === 4 && (
           <div className="space-y-6">
-            <div className="rounded-2xl border border-purple-500/20 bg-purple-500/5 p-4 sm:p-5 flex items-start gap-3.5">
-              <Sparkles className="h-5 w-5 text-purple-400 shrink-0 mt-0.5" />
-              <div className="space-y-1 text-xs text-[var(--rasi-muted)] leading-relaxed">
-                <span className="font-bold text-[var(--rasi-text)] text-sm block">
+            <div className="flex items-start gap-3.5 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-xs sm:p-5">
+              <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-[var(--rasi-primary)]" />
+              <div className="space-y-1 text-xs leading-relaxed text-[var(--rasi-muted)]">
+                <span className="block text-sm font-bold text-[var(--rasi-text)]">
                   Sintesis Cerdas AI RASI (Didukung Gemini)
                 </span>
                 <p>
@@ -1475,34 +1401,38 @@ export function DiscoverUnifiedExperience() {
             </div>
 
             {/* Research Dossier Card */}
-            <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-5 sm:p-6 shadow-[var(--rasi-card-shadow)] space-y-4">
+            <div className="space-y-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-5 shadow-[var(--rasi-card-shadow)] sm:p-6">
               <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-3">
-                <span className="text-xs font-bold text-[var(--rasi-primary)] uppercase tracking-wider">
+                <span className="text-xs font-bold tracking-wider text-[var(--rasi-primary)] uppercase">
                   Dossier Riset Saham {ticker}
                 </span>
-                <span className="text-xs font-mono text-[var(--rasi-muted)]">
+                <span className="font-mono text-xs text-[var(--rasi-muted)]">
                   Status: Siap Disintesis
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                <div className="p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--rasi-surface)]">
-                  <span className="text-[10px] text-[var(--rasi-muted)] block">1. Sinyal & Risiko</span>
-                  <span className="font-bold text-[var(--rasi-text)] mt-1 block">
+              <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-3">
+                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--rasi-surface)] p-3">
+                  <span className="block text-[10px] text-[var(--rasi-muted)]">
+                    1. Sinyal & Risiko
+                  </span>
+                  <span className="mt-1 block font-bold text-[var(--rasi-text)]">
                     {stockData?.composite?.status
                       ? `${stockData.composite.status} (${stockData.composite.score}/100)`
                       : 'Terekam'}
                   </span>
                 </div>
-                <div className="p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--rasi-surface)]">
-                  <span className="text-[10px] text-[var(--rasi-muted)] block">2. Akumulasi Broker</span>
-                  <span className="font-bold text-[var(--rasi-text)] mt-1 block">
+                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--rasi-surface)] p-3">
+                  <span className="block text-[10px] text-[var(--rasi-muted)]">
+                    2. Akumulasi Broker
+                  </span>
+                  <span className="mt-1 block font-bold text-[var(--rasi-text)]">
                     {stockData?.indicators.bandarmology.status || 'Data Terhubung'}
                   </span>
                 </div>
-                <div className="p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--rasi-surface)]">
-                  <span className="text-[10px] text-[var(--rasi-muted)] block">3. Radar Pasar</span>
-                  <span className="font-bold text-[var(--rasi-text)] mt-1 block truncate">
+                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--rasi-surface)] p-3">
+                  <span className="block text-[10px] text-[var(--rasi-muted)]">3. Radar Pasar</span>
+                  <span className="mt-1 block truncate font-bold text-[var(--rasi-text)]">
                     {tickerSleepingGiants.length > 0
                       ? 'Katalis Positif'
                       : tickerInsiderAlerts.length > 0
@@ -1514,11 +1444,11 @@ export function DiscoverUnifiedExperience() {
             </div>
 
             {/* Embedded AI Chat Box */}
-            <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] shadow-[var(--rasi-card-shadow)] overflow-hidden flex flex-col min-h-[420px]">
+            <div className="flex min-h-[420px] flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] shadow-[var(--rasi-card-shadow)]">
               {/* Chat Header */}
-              <div className="p-4 border-b border-[var(--border-subtle)] flex items-center justify-between bg-[var(--rasi-muted-bg)]/30">
+              <div className="flex items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--rasi-muted-bg)]/30 p-4">
                 <div className="flex items-center gap-2">
-                  <Bot className="h-4 w-4 text-[var(--rasi-primary)]" />
+                  <Sparkles className="h-4 w-4 text-[var(--rasi-primary)]" />
                   <span className="text-xs font-bold text-[var(--rasi-text)]">
                     Tanya & Sintesis AI RASI ({ticker})
                   </span>
@@ -1526,7 +1456,7 @@ export function DiscoverUnifiedExperience() {
                 <Link
                   href={`/asisten?symbol=${ticker}`}
                   target="_blank"
-                  className="text-[11px] font-semibold text-[var(--rasi-primary)] hover:underline inline-flex items-center gap-1"
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[var(--rasi-primary)] hover:underline"
                 >
                   <span>Buka di Halaman Penuh</span>
                   <ExternalLink className="h-3 w-3" />
@@ -1534,15 +1464,15 @@ export function DiscoverUnifiedExperience() {
               </div>
 
               {/* Chat Messages */}
-              <div className="flex-1 p-4 sm:p-5 space-y-4 overflow-y-auto max-h-[460px]">
+              <div className="max-h-[460px] flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
                 {chatMessages.length === 0 ? (
-                  <div className="py-8 text-center space-y-3">
-                    <Sparkles className="h-8 w-8 text-[var(--rasi-primary)] mx-auto animate-pulse" />
+                  <div className="space-y-3 py-8 text-center">
+                    <Sparkles className="mx-auto h-8 w-8 animate-pulse text-[var(--rasi-primary)]" />
                     <div>
                       <h4 className="text-sm font-bold text-[var(--rasi-text)]">
                         Instruksi Sintesis {ticker} Telah Disiapkan
                       </h4>
-                      <p className="text-xs text-[var(--rasi-muted)] max-w-md mx-auto mt-1">
+                      <p className="mx-auto mt-1 max-w-md text-xs text-[var(--rasi-muted)]">
                         Klik tombol &quot;Kirim ke AI&quot; di bawah untuk meminta ringkasan
                         menyeluruh berdasarkan data kontinu sesi bursa, broker, dan radar pasar.
                       </p>
@@ -1555,10 +1485,10 @@ export function DiscoverUnifiedExperience() {
                       className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-[85%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed ${
+                        className={`max-w-[85%] rounded-2xl p-4 text-xs leading-relaxed sm:text-sm ${
                           msg.role === 'user'
-                            ? 'bg-[var(--rasi-primary)] font-medium text-[var(--rasi-primary-text)] rounded-tr-xs'
-                            : 'border border-[var(--border-subtle)] bg-[var(--rasi-surface)] text-[var(--rasi-text)] rounded-tl-xs shadow-xs'
+                            ? 'rounded-tr-xs bg-[var(--rasi-primary)] font-medium text-[var(--rasi-primary-text)]'
+                            : 'rounded-tl-xs border border-[var(--border-subtle)] bg-[var(--rasi-surface)] text-[var(--rasi-text)] shadow-xs'
                         }`}
                       >
                         {msg.role === 'user' ? (
@@ -1581,7 +1511,7 @@ export function DiscoverUnifiedExperience() {
                 )}
 
                 {chatError && (
-                  <div className="p-3 rounded-xl border border-rose-500/20 bg-rose-500/10 text-xs text-rose-400">
+                  <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 p-3 text-xs text-rose-400">
                     {chatError}
                   </div>
                 )}
@@ -1593,7 +1523,7 @@ export function DiscoverUnifiedExperience() {
                   e.preventDefault()
                   handleSendChat()
                 }}
-                className="p-3 sm:p-4 border-t border-[var(--border-subtle)] flex items-center gap-2 bg-[var(--rasi-muted-bg)]/20"
+                className="flex items-center gap-2 border-t border-[var(--border-subtle)] bg-[var(--rasi-muted-bg)]/20 p-3 sm:p-4"
               >
                 <input
                   type="text"
@@ -1601,7 +1531,7 @@ export function DiscoverUnifiedExperience() {
                   onChange={(e) => setChatInput(e.target.value)}
                   placeholder={`Tanyakan apa saja seputar saham ${ticker}…`}
                   disabled={chatLoading}
-                  className="flex-1 rounded-xl border border-[var(--rasi-border)] bg-[var(--rasi-surface)] px-4 py-2.5 text-xs sm:text-sm text-[var(--rasi-text)] outline-none focus:border-[var(--rasi-primary)] focus:ring-1 focus:ring-[var(--rasi-primary)]"
+                  className="flex-1 rounded-xl border border-[var(--rasi-border)] bg-[var(--rasi-surface)] px-4 py-2.5 text-xs text-[var(--rasi-text)] outline-none focus:border-[var(--rasi-primary)] focus:ring-1 focus:ring-[var(--rasi-primary)] sm:text-sm"
                 />
                 <Button
                   type="submit"

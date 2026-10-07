@@ -204,7 +204,7 @@ export function SignalEvaluationPanel({ ticker, companyName }: SignalEvaluationP
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center rounded bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400 border border-amber-500/20">
+              <span className="text-[11px] font-semibold text-amber-400">
                 Feed Tertunda ~10m (Yahoo)
               </span>
             </div>
@@ -338,16 +338,16 @@ export function SignalEvaluationPanel({ ticker, companyName }: SignalEvaluationP
                 />
               </div>
 
-              {/* Recommendation badge */}
+              {/* Recommendation text */}
               <div className="pt-0.5">
                 <span
-                  className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold border truncate max-w-full ${
+                  className={`inline-flex items-center gap-1 text-xs font-bold truncate max-w-full ${
                     (report.assessment.rasiScore ?? 50) < 40 ||
                     report.assessment.recommendation === 'STRONG_AVOID'
-                      ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                      ? 'text-rose-400'
                       : (report.assessment.rasiScore ?? 50) >= 70
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                        : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                        ? 'text-emerald-400'
+                        : 'text-amber-400'
                   }`}
                 >
                   {report.assessment.recommendationLabel ??
