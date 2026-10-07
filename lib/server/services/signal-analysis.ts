@@ -52,7 +52,33 @@ export async function getSignalAnalysisReport(
   const context = await getLatestSignalContextForTicker(cleanTicker)
   if (!context) return null
 
-  return getLatestSignalAnalysisRunForContext(context.id)
+  let run = await getLatestSignalAnalysisRunForContext(context.id)
+
+  const nowMs = Date.now()
+  const hasExpiredPending = run?.outcomes?.some(
+    (o) =>
+      (o.status === 'PENDING' || o.status === 'AWAITING_DATA' || o.status === 'MISSING_PRICE') &&
+      o.targetAt &&
+      new Date(o.targetAt).getTime() <= nowMs,
+  )
+
+  const hasZeroProjection = Boolean(
+    run?.projection &&
+      run.projection.status === 'COMPLETED' &&
+      run.projection.probabilities?.pTp1BeforeSl === 0 &&
+      run.projection.probabilities?.pSlBeforeTp1 === 0 &&
+      run.projection.probabilities?.pNeitherTouched === 1,
+  )
+
+  if (!run || hasExpiredPending || hasZeroProjection) {
+    try {
+      run = await evaluateSignalAnalysis({ ticker: cleanTicker, contextId: context.id })
+    } catch {
+      // Retain existing run if fresh evaluation encounters transient issue
+    }
+  }
+
+  return run
 }
 
 /**
@@ -182,7 +208,14 @@ export async function evaluateSignalAnalysis(params: {
       configHash,
     })
     if (cachedRun) {
-      return cachedRun
+      const isZeroProj =
+        cachedRun.projection?.status === 'COMPLETED' &&
+        cachedRun.projection?.probabilities?.pTp1BeforeSl === 0 &&
+        cachedRun.projection?.probabilities?.pSlBeforeTp1 === 0 &&
+        cachedRun.projection?.probabilities?.pNeitherTouched === 1
+      if (!isZeroProj) {
+        return cachedRun
+      }
     }
   } catch {
     // Proceed if lookup fails
@@ -198,23 +231,16 @@ export async function evaluateSignalAnalysis(params: {
     stopSlippageTicks: 1,
   })
 
-  // 5. Evaluate Actual Session Outcomes (Pure Domain)
-  const outcomes = evaluateSessionSignalOutcomes({
-    context,
-    bars,
-    asOfIso,
-    feedDelayMinutes: 10,
-  })
-
-  // 6. Calculate Technical Indicators & Conditions
-  // Daily closes for EMA-20 and consecutive drop calculation
+  // 5. Calculate Technical Indicators & Daily Closes
   let ema20: number | null = null
   let dailyCloses: number[] = []
+  let dailyPricesList: Array<{ date: string; close: number }> = []
   try {
     const dailyEnvelope = await fetchDailyPrices(cleanTicker, undefined, 40)
     const dailyRows = dailyEnvelope.data ?? []
     if (dailyRows.length > 0) {
       const sorted = [...dailyRows].sort((a, b) => a.date.localeCompare(b.date))
+      dailyPricesList = sorted.map((r) => ({ date: r.date, close: r.close }))
       dailyCloses = sorted.map((r) => r.close)
       if (dailyCloses.length >= 20) {
         ema20 = calculateEMA20(dailyCloses)
@@ -223,6 +249,15 @@ export async function evaluateSignalAnalysis(params: {
   } catch {
     // Optional
   }
+
+  // 6. Evaluate Actual Session Outcomes (Pure Domain)
+  const outcomes = evaluateSessionSignalOutcomes({
+    context,
+    bars,
+    asOfIso,
+    feedDelayMinutes: 10,
+    dailyPrices: dailyPricesList,
+  })
 
   const vwap = calculateVWAP(bars)
 

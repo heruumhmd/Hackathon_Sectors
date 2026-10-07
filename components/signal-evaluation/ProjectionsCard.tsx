@@ -1,14 +1,15 @@
 'use client'
 
 import React from 'react'
-import type { ProjectionResult } from '@/lib/contracts/signal-analysis'
+import type { ProjectionResult, RiskPlan } from '@/lib/contracts/signal-analysis'
 import { AlertCircle, TrendingUp, Activity, BarChart2 } from 'lucide-react'
 
 interface ProjectionsCardProps {
   projection: ProjectionResult
+  riskPlan?: RiskPlan
 }
 
-export function ProjectionsCard({ projection }: ProjectionsCardProps) {
+export function ProjectionsCard({ projection, riskPlan }: ProjectionsCardProps) {
   if (projection.status === 'INSUFFICIENT_DATA') {
     return (
       <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 text-xs text-[var(--rasi-text)] space-y-3">
@@ -207,7 +208,11 @@ export function ProjectionsCard({ projection }: ProjectionsCardProps) {
                   {(probabilities.pSlBeforeTp1 * 100).toFixed(1)}%
                 </td>
                 <td className="px-3 py-2 text-right">
-                  Rp {sensitivities.slippage2Ticks.netRisk > 0 ? (sensitivities.slippage2Ticks.netRisk - 10).toFixed(2) : '—'}
+                  {riskPlan?.netRiskPerShare
+                    ? `Rp ${riskPlan.netRiskPerShare.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+                    : sensitivities.slippage2Ticks.netRisk > 0
+                      ? `Rp ${sensitivities.slippage2Ticks.netRisk.toLocaleString('id-ID')}`
+                      : '—'}
                 </td>
                 <td className="px-3 py-2 font-sans text-[var(--rasi-muted)]">Volatilitas historis normal</td>
               </tr>

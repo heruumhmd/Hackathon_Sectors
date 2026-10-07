@@ -131,8 +131,9 @@ export function evaluateSessionSignalOutcomes(params: {
   bars: IntradayBar[]
   asOfIso: string
   feedDelayMinutes?: number
+  dailyPrices?: Array<{ date: string; close: number }>
 }): SignalOutcome[] {
-  const { context, bars, asOfIso, feedDelayMinutes = 10 } = params
+  const { context, bars, asOfIso, feedDelayMinutes = 10, dailyPrices } = params
   const horizons: Horizon[] = [1, 3, 5]
 
   const signalDate = new Date(context.signalAt)
@@ -214,8 +215,33 @@ export function evaluateSessionSignalOutcomes(params: {
       }
     }
 
-    if (closingBar) {
-      const actualPrice = closingBar.close
+    // Fallback 1: If session has completed and any bar exists in this session, use the last available session bar
+    if (!closingBar && sessionBars.length > 0) {
+      closingBar = sessionBars[sessionBars.length - 1]
+    }
+
+    // Fallback 2: If session completed but no intraday bars found, check daily prices (for targetDate or closest completed date)
+    let fallbackPrice: number | null = null
+    let fallbackNote: string | null = null
+
+    if (!closingBar && dailyPrices && dailyPrices.length > 0) {
+      const exactDaily = dailyPrices.find((d) => d.date === target.targetDate)
+      if (exactDaily && exactDaily.close > 0) {
+        fallbackPrice = exactDaily.close
+        fallbackNote = 'Sudah dievaluasi berdasarkan harga penutupan bursa resmi harian.'
+      } else {
+        const preceding = dailyPrices
+          .filter((d) => d.date <= target.targetDate && d.close > 0)
+          .sort((a, b) => b.date.localeCompare(a.date))
+        if (preceding.length > 0) {
+          fallbackPrice = preceding[0].close
+          fallbackNote = `Sudah dievaluasi berdasarkan harga penutupan bursa tanggal ${preceding[0].date}.`
+        }
+      }
+    }
+
+    if (closingBar || fallbackPrice !== null) {
+      const actualPrice = closingBar ? closingBar.close : fallbackPrice!
       const refPrice = context.referencePrice
       const buyFee = context.initialRiskParams?.buyFee ?? 0.0015
       const sellFee = context.initialRiskParams?.sellFee ?? 0.0025
@@ -233,7 +259,9 @@ export function evaluateSessionSignalOutcomes(params: {
         grossReturn,
         netReturn,
         status: 'MATURED',
-        notes: 'Sudah dievaluasi berdasarkan harga penutupan sesi kontinu.',
+        notes: closingBar
+          ? 'Sudah dievaluasi berdasarkan harga penutupan sesi kontinu.'
+          : (fallbackNote || 'Sudah dievaluasi berdasarkan harga penutupan bursa resmi.'),
       }
     }
 

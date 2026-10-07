@@ -145,3 +145,83 @@ test('runSignalProjections partitions probabilities to 1.0 and respects BMRI ris
   assert.ok(result.sensitivities.volPlus25.pTp1 > 0)
   assert.ok(result.sensitivities.slippage2Ticks.netRisk > riskPlan.netRiskPerShare)
 })
+
+test('runSignalProjections projects forward 5 sessions from asOfPrice when original horizons have all matured', () => {
+  const context = {
+    id: 'ctx-proj-test-matured',
+    ticker: 'BBCA',
+    signalAt: jakartaTimeToIso('2026-09-21', 14, 0, 0),
+    referencePrice: 6175,
+    referencePriceAt: jakartaTimeToIso('2026-09-21', 14, 0, 0),
+    ruleLabel: 'R01 Akumulasi Broker Asing',
+    provenance: { source: 'SECTORS' },
+    methodologyVersion: 'rasi-v2.0',
+    initialRiskParams: {
+      initialATR: 120,
+      tick: 25,
+      buyFee: 0.0015,
+      sellFee: 0.0025,
+      stopSlippage: 25,
+    },
+    createdAt: new Date().toISOString(),
+  }
+
+  const riskPlan = calculateRiskPlan({
+    entry: 6175,
+    initialATR: 120,
+    tick: 25,
+    buyFee: 0.0015,
+    sellFee: 0.0025,
+    stopSlippageTicks: 1,
+  })
+
+  const calibration = {
+    sigmaS1_5m: 0.0015,
+    sigmaS2_5m: 0.0018,
+    sigmaLunchGap: 0.0025,
+    sigmaOvernightGap: 0.0035,
+    completeDaysCount: 45,
+    lunchGapCount: 45,
+    overnightGapCount: 44,
+    isSufficient: true,
+  }
+
+  // Evaluate on 2026-10-06 (all original horizons from 2026-09-21 have elapsed in the past)
+  const asOf = jakartaTimeToIso('2026-10-06', 16, 0, 0)
+
+  const result = runSignalProjections({
+    context,
+    asOfIso: asOf,
+    asOfPrice: 6100,
+    riskPlan,
+    calibration,
+    options: {
+      numPaths: 10000,
+      seed: 42,
+    },
+  })
+
+  assert.equal(result.status, 'COMPLETED')
+  assert.equal(result.remainingSessionsCount[5], 5)
+
+  // Partition check: sum of probabilities is 1.0
+  const sum =
+    result.probabilities.pTp1BeforeSl +
+    result.probabilities.pSlBeforeTp1 +
+    result.probabilities.pNeitherTouched
+  assert.ok(Math.abs(sum - 1.0) < 0.001, `Probabilities sum ${sum} is not 1.0`)
+
+  // Non-zero forward touch probabilities
+  assert.ok(result.probabilities.pTp1BeforeSl > 0, 'P(TP1) should be > 0')
+  assert.ok(result.probabilities.pSlBeforeTp1 > 0, 'P(SL) should be > 0')
+
+  // Distributions are populated
+  assert.ok(result.priceDistributions[3].median > 0)
+  assert.ok(result.priceDistributions[5].median > 0)
+  assert.ok(result.priceDistributions[5].p10 < result.priceDistributions[5].p90)
+
+  // Dynamic strategy produces positive metrics
+  assert.ok(result.dynamicStrategy.winRatePct > 0)
+  assert.ok(result.notes.includes('5 sesi ke depan'))
+})
+

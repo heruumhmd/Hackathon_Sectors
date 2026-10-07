@@ -437,7 +437,7 @@ export function SignalEvaluationPanel({ ticker, companyName }: SignalEvaluationP
               )}
 
               {activeTab === 'projection' && (
-                <ProjectionsCard projection={report.projection} />
+                <ProjectionsCard projection={report.projection} riskPlan={report.riskPlan} />
               )}
             </div>
           </div>

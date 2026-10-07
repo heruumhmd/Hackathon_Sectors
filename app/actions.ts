@@ -1367,8 +1367,17 @@ export async function getSignalAnalysisAction(
       return errorResult('VALIDATION_ERROR', 'Ticker saham tidak valid.')
     }
 
-    const { getSignalAnalysisReport } = await import('@/lib/server/services/signal-analysis')
-    const report = await getSignalAnalysisReport(cleanTicker)
+    const { getSignalAnalysisReport, evaluateSignalAnalysis } = await import(
+      '@/lib/server/services/signal-analysis'
+    )
+    let report = await getSignalAnalysisReport(cleanTicker)
+    if (!report) {
+      try {
+        report = await evaluateSignalAnalysis({ ticker: cleanTicker })
+      } catch {
+        // Fallback gracefully
+      }
+    }
     return successResult(report)
   } catch (error) {
     return errorResult(

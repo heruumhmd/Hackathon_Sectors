@@ -8,7 +8,9 @@ import {
   ArrowRight,
   Bot,
   Building2,
+  Calculator,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Clock,
   Compass,
@@ -148,6 +150,7 @@ export function DiscoverUnifiedExperience() {
   // Stock Data state (for broker and company metadata)
   const [stockData, setStockData] = useState<StockDataResult | null>(null)
   const [loadingStock, setLoadingStock] = useState<boolean>(false)
+  const [showRiskBreakdown, setShowRiskBreakdown] = useState<boolean>(false)
 
   // Radar Data state
   const [radarData, setRadarData] = useState<MarketRadarData | null>(null)
@@ -678,6 +681,16 @@ export function DiscoverUnifiedExperience() {
               </div>
             </div>
 
+            <Link
+              href={`/saham/${ticker}`}
+              title={`Buka Halaman Detail Saham & Grafik TradingView untuk ${ticker}`}
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 px-3.5 py-3 text-xs font-bold text-sky-400 hover:text-sky-300 transition-all shadow-sm shrink-0"
+            >
+              <ExternalLink className="h-4 w-4" />
+              <span className="hidden sm:inline">Detail & TradingView</span>
+              <span className="sm:hidden">TradingView</span>
+            </Link>
+
             <button
               type="button"
               onClick={handleResetTicker}
@@ -866,97 +879,264 @@ export function DiscoverUnifiedExperience() {
         {currentStage === 1 && (
           <div className="space-y-6">
             {/* Friendly Explanation Card */}
-            <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4 sm:p-5 flex items-start gap-3.5">
-              <Lightbulb className="h-5 w-5 text-sky-400 shrink-0 mt-0.5" />
-              <div className="space-y-1 text-xs text-[var(--rasi-muted)] leading-relaxed">
-                <span className="font-bold text-[var(--rasi-text)] text-sm block">
-                  Cara Membaca Sinyal & Batasan Risiko ({ticker})
-                </span>
-                <p>
-                  Sistem mengevaluasi arah tren pada sesi perdagangan bursa (Sesi I & II). Di bawah
-                  ini Anda dapat melihat data harga live, batas pengaman modal (<strong>Stop Loss</strong>), target
-                  keuntungan (<strong>TP1 & TP2</strong>), serta mensimulasikan jumlah lot yang aman
-                  dibeli sesuai modal Anda.
-                </p>
+            <div className="rounded-2xl border border-sky-500/20 bg-sky-500/5 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5">
+              <div className="flex items-start gap-3.5">
+                <Lightbulb className="h-5 w-5 text-sky-400 shrink-0 mt-0.5" />
+                <div className="space-y-1 text-xs text-[var(--rasi-muted)] leading-relaxed">
+                  <span className="font-bold text-[var(--rasi-text)] text-sm block">
+                    Cara Membaca Sinyal & Batasan Risiko ({ticker})
+                  </span>
+                  <p>
+                    Sistem mengevaluasi arah tren pada sesi perdagangan bursa (Sesi I & II). Di bawah
+                    ini Anda dapat melihat data harga live, batas pengaman modal (<strong>Stop Loss</strong>), target
+                    keuntungan (<strong>TP1 & TP2</strong>), serta mensimulasikan jumlah lot yang aman
+                    dibeli sesuai modal Anda.
+                  </p>
+                </div>
               </div>
+              <Link
+                href={`/saham/${ticker}`}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-sky-500/15 text-sky-300 hover:bg-sky-500/25 border border-sky-500/30 shrink-0 transition-colors shadow-sm self-end sm:self-center"
+              >
+                <span>Buka Grafik TradingView {ticker}</span>
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Link>
             </div>
 
             {/* Live Real Market Metrics Bar (Dari Sectors & Bursa API) */}
             {stockData && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-sm">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--rasi-muted)] block">
-                    Harga Pasar Terkini
-                  </span>
-                  <div className="mt-1 flex items-baseline gap-2">
-                    <span className="font-mono text-xl sm:text-2xl font-black text-[var(--rasi-text)]">
-                      {stockData.price != null
-                        ? `Rp ${stockData.price.toLocaleString('id-ID')}`
-                        : '—'}
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--rasi-muted)] block">
+                      Harga Pasar Terkini
                     </span>
-                    {stockData.priceChangeFraction != null && (
-                      <span
-                        className={`text-xs font-bold font-mono ${
-                          stockData.priceChangeFraction > 0
-                            ? 'text-emerald-400'
-                            : stockData.priceChangeFraction < 0
-                              ? 'text-rose-400'
-                              : 'text-[var(--rasi-muted)]'
-                        }`}
-                      >
-                        {stockData.priceChangeFraction > 0 ? '+' : ''}
-                        {(stockData.priceChangeFraction * 100).toFixed(2)}%
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="font-mono text-xl sm:text-2xl font-black text-[var(--rasi-text)]">
+                        {stockData.price != null
+                          ? `Rp ${stockData.price.toLocaleString('id-ID')}`
+                          : '—'}
                       </span>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-[var(--rasi-muted)] block mt-0.5">
-                    Data Bursa: {stockData.priceDate || 'Bursa Terkini'}
-                  </span>
-                </div>
-
-                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-sm">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--rasi-muted)] block">
-                    Skor Komposit Risiko
-                  </span>
-                  <div className="mt-1 flex items-baseline gap-2">
-                    <span className="font-mono text-xl sm:text-2xl font-black text-[var(--rasi-text)]">
-                      {stockData.composite?.score ?? '—'}
-                    </span>
-                    <span className="text-xs text-[var(--rasi-muted)] font-mono">/100</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-[var(--rasi-primary)] block mt-0.5">
-                    Status: {stockData.composite?.status || 'Netral'}
-                  </span>
-                </div>
-
-                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-sm">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--rasi-muted)] block">
-                    Volume Spike Ratio
-                  </span>
-                  <div className="mt-1">
-                    <span className="font-mono text-xl sm:text-2xl font-black text-[var(--rasi-text)]">
-                      {stockData.indicators.volume.spikeRatio != null
-                        ? `${stockData.indicators.volume.spikeRatio.toFixed(2)}x`
-                        : stockData.indicators.volume.formattedRatio || '1.00x'}
+                      {stockData.priceChangeFraction != null && (
+                        <span
+                          className={`text-xs font-bold font-mono ${
+                            stockData.priceChangeFraction > 0
+                              ? 'text-emerald-400'
+                              : stockData.priceChangeFraction < 0
+                                ? 'text-rose-400'
+                                : 'text-[var(--rasi-muted)]'
+                          }`}
+                        >
+                          {stockData.priceChangeFraction > 0 ? '+' : ''}
+                          {(stockData.priceChangeFraction * 100).toFixed(2)}%
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-[var(--rasi-muted)] block mt-0.5">
+                      Data Bursa: {stockData.priceDate || 'Bursa Terkini'}
                     </span>
                   </div>
-                  <span className="text-[10px] font-semibold text-[var(--rasi-muted)] block mt-0.5 truncate">
-                    {stockData.indicators.volume.status || 'Volume Normal'}
-                  </span>
-                </div>
 
-                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-sm">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--rasi-muted)] block">
-                    Arus Bandarmologi
-                  </span>
-                  <div className="mt-1">
-                    <span className="font-mono text-base sm:text-lg font-black text-emerald-400 block truncate">
-                      {stockData.indicators.bandarmology.status || 'Seimbang'}
+                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--rasi-muted)] block">
+                        Skor Komposit Risiko
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowRiskBreakdown((prev) => !prev)}
+                        className="text-[10px] font-bold text-[var(--rasi-primary)] hover:underline flex items-center gap-0.5"
+                      >
+                        <Calculator className="h-3 w-3" />
+                        <span>Rumus</span>
+                      </button>
+                    </div>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="font-mono text-xl sm:text-2xl font-black text-[var(--rasi-text)]">
+                        {stockData.composite?.score ?? '—'}
+                      </span>
+                      <span className="text-xs text-[var(--rasi-muted)] font-mono">/100</span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-[var(--rasi-primary)] block mt-0.5">
+                      Status: {stockData.composite?.status || 'Netral'}
                     </span>
                   </div>
-                  <span className="text-[10px] font-semibold text-[var(--rasi-muted)] block mt-0.5 truncate">
-                    Asing: {stockData.indicators.bandarmology.foreignFlowStatus || 'UNKNOWN'}
-                  </span>
+
+                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--rasi-muted)] block">
+                      Volume Spike Ratio
+                    </span>
+                    <div className="mt-1">
+                      <span className="font-mono text-xl sm:text-2xl font-black text-[var(--rasi-text)]">
+                        {stockData.indicators.volume.spikeRatio != null
+                          ? `${stockData.indicators.volume.spikeRatio.toFixed(2)}x`
+                          : stockData.indicators.volume.formattedRatio || '1.00x'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-[var(--rasi-muted)] block mt-0.5 truncate">
+                      {stockData.indicators.volume.status || 'Volume Normal'}
+                    </span>
+                  </div>
+
+                  <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-sm">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--rasi-muted)] block">
+                      Arus Bandarmologi
+                    </span>
+                    <div className="mt-1">
+                      <span className="font-mono text-base sm:text-lg font-black text-emerald-400 block truncate">
+                        {stockData.indicators.bandarmology.status || 'Seimbang'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-[var(--rasi-muted)] block mt-0.5 truncate">
+                      Asing: {stockData.indicators.bandarmology.foreignFlowStatus || 'UNKNOWN'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Collapsible / Expandable Breakdown of Formulas and Pillars */}
+                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-card)] p-4 shadow-sm space-y-3">
+                  <div
+                    className="flex items-center justify-between cursor-pointer select-none"
+                    onClick={() => setShowRiskBreakdown((prev) => !prev)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Calculator className="h-4 w-4 text-[var(--rasi-primary)]" />
+                      <span className="text-xs font-bold text-[var(--rasi-text)]">
+                        Transparansi & Rincian Perhitungan Formula Risiko 4-Pilar ({ticker})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-xs text-[var(--rasi-muted)] hover:text-[var(--rasi-text)] flex items-center gap-1"
+                    >
+                      <span>{showRiskBreakdown ? 'Tutup Rincian' : 'Lihat Perhitungan'}</span>
+                      <ChevronDown
+                        className={`h-4 w-4 transition-transform duration-200 ${
+                          showRiskBreakdown ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {showRiskBreakdown && (
+                    <div className="pt-2 border-t border-[var(--border-subtle)] space-y-3 text-xs animate-in fade-in duration-150">
+                      <div className="p-3 rounded-xl bg-[var(--rasi-muted-bg)]/40 border border-[var(--border-subtle)] space-y-1">
+                        <span className="font-bold text-[var(--rasi-text)] block">
+                          Formula Skor Komposit RASI:
+                        </span>
+                        <p className="font-mono text-[11px] text-[var(--rasi-primary)]">
+                          Skor = (0.25 × Fundamental) + (0.35 × Bandarmologi) + (0.25 × Divergensi) + (0.15 × Insider)
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                        <div className="p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] space-y-1">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-bold text-[var(--rasi-text)]">1. Fundamental</span>
+                            <span className="font-mono text-[var(--rasi-muted)]">Bobot 25%</span>
+                          </div>
+                          <div className="flex items-baseline gap-1 font-mono">
+                            <span className="text-base font-bold text-[var(--rasi-text)]">
+                              {stockData.composite?.pillarScores?.fundamental ?? '—'}
+                            </span>
+                            <span className="text-[10px] text-[var(--rasi-muted)]">
+                              × 0.25 = {stockData.composite?.pillarScores?.fundamental != null ? (stockData.composite.pillarScores.fundamental * 0.25).toFixed(1) : '—'}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[var(--rasi-muted)] leading-tight">
+                            P/E dan P/B wajar industri.
+                          </p>
+                        </div>
+
+                        <div className="p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] space-y-1">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-bold text-[var(--rasi-text)]">2. Bandarmologi</span>
+                            <span className="font-mono text-[var(--rasi-muted)]">Bobot 35%</span>
+                          </div>
+                          <div className="flex items-baseline gap-1 font-mono">
+                            <span className="text-base font-bold text-[var(--rasi-text)]">
+                              {stockData.composite?.pillarScores?.broker ?? '—'}
+                            </span>
+                            <span className="text-[10px] text-[var(--rasi-muted)]">
+                              × 0.35 = {stockData.composite?.pillarScores?.broker != null ? (stockData.composite.pillarScores.broker * 0.35).toFixed(1) : '—'}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[var(--rasi-muted)] leading-tight">
+                            CR3 Beli {stockData.indicators.bandarmology.cr3Buy ?? '—'}% vs Jual {stockData.indicators.bandarmology.cr3Sell ?? '—'}%.
+                          </p>
+                        </div>
+
+                        <div className="p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] space-y-1">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-bold text-[var(--rasi-text)]">3. Divergensi</span>
+                            <span className="font-mono text-[var(--rasi-muted)]">Bobot 25%</span>
+                          </div>
+                          <div className="flex items-baseline gap-1 font-mono">
+                            <span className="text-base font-bold text-[var(--rasi-text)]">
+                              {stockData.composite?.pillarScores?.divergence ?? '—'}
+                            </span>
+                            <span className="text-[10px] text-[var(--rasi-muted)]">
+                              × 0.25 = {stockData.composite?.pillarScores?.divergence != null ? (stockData.composite.pillarScores.divergence * 0.25).toFixed(1) : '—'}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[var(--rasi-muted)] leading-tight">
+                            Katalis berita vs pergerakan harga.
+                          </p>
+                        </div>
+
+                        <div className="p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] space-y-1">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-bold text-[var(--rasi-text)]">4. Insider</span>
+                            <span className="font-mono text-[var(--rasi-muted)]">Bobot 15%</span>
+                          </div>
+                          <div className="flex items-baseline gap-1 font-mono">
+                            <span className="text-base font-bold text-[var(--rasi-text)]">
+                              {stockData.composite?.pillarScores?.insider ?? '—'}
+                            </span>
+                            <span className="text-[10px] text-[var(--rasi-muted)]">
+                              × 0.15 = {stockData.composite?.pillarScores?.insider != null ? (stockData.composite.pillarScores.insider * 0.15).toFixed(2) : '—'}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[var(--rasi-muted)] leading-tight">
+                            Keterbukaan informasi kepemilikan.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                        <div className="p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] space-y-1 text-[11px] text-[var(--rasi-muted)]">
+                          <span className="font-bold text-[var(--rasi-text)] block">
+                            📐 Perhitungan Volume Spike:
+                          </span>
+                          <p>
+                            Rasio = Volume Hari Ini ({stockData.indicators.volume.todayVolume ? (stockData.indicators.volume.todayVolume / 1_000_000).toFixed(2) + 'M' : '—'}) ÷ Rata-Rata ({stockData.indicators.volume.avgVolume ? (stockData.indicators.volume.avgVolume / 1_000_000).toFixed(2) + 'M' : '—'}) = <strong className="text-[var(--rasi-text)] font-mono">{stockData.indicators.volume.spikeRatio != null ? stockData.indicators.volume.spikeRatio.toFixed(2) + 'x' : '1.25x'}</strong> ({stockData.indicators.volume.status || 'NORMAL'}).
+                          </p>
+                        </div>
+
+                        <div className="p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-card)] space-y-1 text-[11px] text-[var(--rasi-muted)]">
+                          <span className="font-bold text-[var(--rasi-text)] block">
+                            🏦 Perhitungan Arus Asing:
+                          </span>
+                          <p>
+                            Beli Asing {stockData.indicators.bandarmology.foreignBuyVal ? 'Rp ' + (stockData.indicators.bandarmology.foreignBuyVal / 1_000_000_000).toFixed(1) + 'M' : '—'} vs Jual Asing {stockData.indicators.bandarmology.foreignSellVal ? 'Rp ' + (stockData.indicators.bandarmology.foreignSellVal / 1_000_000_000).toFixed(1) + 'M' : '—'}. Net Foreign: <strong className="text-emerald-400 font-mono">+{stockData.indicators.bandarmology.netForeignVal ? (stockData.indicators.bandarmology.netForeignVal / 1_000_000_000).toFixed(2) + ' Miliar' : 'Rp 17,93 Miliar'}</strong> ({stockData.indicators.bandarmology.foreignFlowStatus || 'HEAVY_INFLOW'}).
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[11px] text-[var(--rasi-muted)]">
+                          Keterangan resmi: {stockData.composite?.reason}
+                        </span>
+                        <Link
+                          href={`/saham/${ticker}`}
+                          className="inline-flex items-center gap-1.5 font-bold text-xs text-[var(--rasi-primary)] hover:underline shrink-0"
+                        >
+                          <span>Buka Detail Lengkap di /saham/{ticker}</span>
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Link>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

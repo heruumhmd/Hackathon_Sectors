@@ -13,7 +13,7 @@ import {
   identifySession,
   isBarInContinuousTrading,
 } from './trading-sessions.ts'
-import { calculateTrailingStop } from './trade-risk.ts'
+import { calculateRiskPlan, calculateTrailingStop, getIdxTickSize } from './trade-risk.ts'
 
 export const PRNG_VERSION = 'mulberry32-boxmuller-v1'
 
@@ -232,6 +232,7 @@ export function buildRemainingSimulationSteps(params: {
 }): {
   steps: SimulationStepDefinition[]
   remainingSessions: Record<Horizon, number>
+  isForwardProjected?: boolean
 } {
   const { context, asOfIso, volatilities, volMultiplier = 1.0 } = params
   const horizons: Horizon[] = [1, 3, 5]
@@ -265,7 +266,91 @@ export function buildRemainingSimulationSteps(params: {
 
   const steps: SimulationStepDefinition[] = []
   if (pendingHorizons.length === 0) {
-    return { steps, remainingSessions }
+    // All original signal horizons have elapsed in the past.
+    // Construct 5 forward trading sessions from asOfIso to project upcoming price paths.
+    const asOfDate = new Date(asOfIso)
+    const asOfSessionInfo = identifySession(asOfDate)
+
+    const forwardBaseDateStr = asOfSessionInfo.dateStr
+    let forwardBaseSession: SessionId = 'S1'
+    if (asOfSessionInfo.session === 'S1' || asOfSessionInfo.session === 'S2') {
+      forwardBaseSession = asOfSessionInfo.session
+    } else {
+      forwardBaseSession = 'S2'
+    }
+
+    const forwardSessions: Array<{ dateStr: string; session: SessionId }> = []
+    let curSession = forwardBaseSession
+    let curDate = forwardBaseDateStr
+
+    for (let s = 1; s <= 5; s++) {
+      if (curSession === 'S1') {
+        curSession = 'S2'
+        forwardSessions.push({ dateStr: curDate, session: curSession })
+      } else {
+        const next = getNextTradingDay(curDate)
+        if (!next.calendarAvailable || !next.nextDate) break
+        curDate = next.nextDate
+        curSession = 'S1'
+        forwardSessions.push({ dateStr: curDate, session: curSession })
+      }
+    }
+
+    let prevSession: SessionId | null = null
+
+    for (let sIdx = 0; sIdx < forwardSessions.length; sIdx++) {
+      const sessionItem = forwardSessions[sIdx]
+      const horizonNumber = (sIdx + 1) as Horizon
+
+      // Insert inter-session gap if transitioning
+      if (prevSession !== null) {
+        if (prevSession === 'S1' && sessionItem.session === 'S2') {
+          steps.push({
+            type: 'lunch_gap',
+            session: 'S2',
+            sigma: volatilities.sigmaLunchGap * volMultiplier,
+          })
+        } else if (prevSession === 'S2' && sessionItem.session === 'S1') {
+          steps.push({
+            type: 'overnight_gap',
+            session: 'S1',
+            sigma: volatilities.sigmaOvernightGap * volMultiplier,
+          })
+        }
+      }
+
+      // Determine number of 5m bars in this session
+      const [y, m, d] = sessionItem.dateStr.split('-').map(Number)
+      const isFriday = new Date(Date.UTC(y, m - 1, d)).getUTCDay() === 5
+      const barCount =
+        sessionItem.session === 'S1' ? (isFriday ? 30 : 36) : isFriday ? 22 : 28
+
+      const barSigma =
+        sessionItem.session === 'S1'
+          ? volatilities.sigmaS1_5m * volMultiplier
+          : volatilities.sigmaS2_5m * volMultiplier
+
+      for (let b = 0; b < barCount; b++) {
+        const isLastBarOfSession = b === barCount - 1
+        steps.push({
+          type: '5m',
+          session: sessionItem.session,
+          sigma: barSigma,
+          isHorizonBoundary:
+            isLastBarOfSession && (horizonNumber === 1 || horizonNumber === 3 || horizonNumber === 5)
+              ? horizonNumber
+              : undefined,
+        })
+      }
+
+      prevSession = sessionItem.session
+    }
+
+    return {
+      steps,
+      remainingSessions: { 1: 1, 3: 3, 5: 5 },
+      isForwardProjected: true,
+    }
   }
 
   // Build the chronological sequence of remaining sessions from asOf up to Horizon 5
@@ -347,7 +432,7 @@ export function buildRemainingSimulationSteps(params: {
     prevSession = sessionItem.session
   }
 
-  return { steps, remainingSessions }
+  return { steps, remainingSessions, isForwardProjected: false }
 }
 
 export interface RunSimulationOptions {
@@ -415,7 +500,7 @@ export function runSignalProjections(params: {
     }
   }
 
-  const { steps, remainingSessions } = buildRemainingSimulationSteps({
+  const { steps, remainingSessions, isForwardProjected = false } = buildRemainingSimulationSteps({
     context,
     asOfIso,
     volatilities: calibration,
@@ -472,15 +557,32 @@ export function runSignalProjections(params: {
     }
   })
 
-  const TP1 = riskPlan.takeProfit1
-  const TP2 = riskPlan.takeProfit2
-  const SL = riskPlan.stopLoss
-  const BEP = riskPlan.breakEvenPrice
-  const initialATR = riskPlan.initialATR
-  const tick = riskPlan.tick
-  const costBasis = riskPlan.costBasis
-  const sellFee = riskPlan.sellFee
-  const netRiskPerShare = riskPlan.netRiskPerShare
+  // If current price is already at/beyond stopLoss or takeProfit2,
+  // calibrate an effective risk plan anchored at asOfPrice so forward Monte Carlo simulation
+  // reflects realistic future price paths rather than instant barrier collapse.
+  const isBoundaryBreached =
+    asOfPrice <= riskPlan.stopLoss || asOfPrice >= riskPlan.takeProfit2
+  const shouldReanchor = isBoundaryBreached || isForwardProjected
+  const effectiveRiskPlan = shouldReanchor
+    ? calculateRiskPlan({
+        entry: asOfPrice,
+        initialATR: riskPlan.initialATR || Number((asOfPrice * 0.02).toFixed(4)),
+        tick: riskPlan.tick || getIdxTickSize(asOfPrice),
+        buyFee: 0.0015,
+        sellFee: 0.0025,
+        stopSlippageTicks: 1,
+      })
+    : riskPlan
+
+  const TP1 = effectiveRiskPlan.takeProfit1
+  const TP2 = effectiveRiskPlan.takeProfit2
+  const SL = effectiveRiskPlan.stopLoss
+  const BEP = effectiveRiskPlan.breakEvenPrice
+  const initialATR = effectiveRiskPlan.initialATR
+  const tick = effectiveRiskPlan.tick
+  const costBasis = effectiveRiskPlan.costBasis
+  const sellFee = effectiveRiskPlan.sellFee
+  const netRiskPerShare = effectiveRiskPlan.netRiskPerShare
 
   // Seeded PRNG & Box-Muller generator
   const prng = createMulberry32(seed)
@@ -672,6 +774,8 @@ export function runSignalProjections(params: {
         netRisk: slip2TicksRisk,
       },
     },
-    notes: `Simulasi 100.000 lintasan GBM murni (${PRNG_VERSION}) berbasis kalibrasi ${calibration.completeDaysCount} hari bursa.`,
+    notes: shouldReanchor
+      ? `Simulasi 100.000 lintasan GBM murni (${PRNG_VERSION}) 5 sesi ke depan dikalibrasi dari harga pasar terkini Rp ${asOfPrice.toLocaleString('id-ID')} berbasis ${calibration.completeDaysCount} hari bursa.`
+      : `Simulasi 100.000 lintasan GBM murni (${PRNG_VERSION}) berbasis kalibrasi ${calibration.completeDaysCount} hari bursa.`,
   }
 }

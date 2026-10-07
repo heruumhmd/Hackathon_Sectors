@@ -85,7 +85,7 @@ export function ActualOutcomesTable({ outcomes }: ActualOutcomesTableProps) {
           </thead>
           <tbody className="divide-y divide-[var(--rasi-border)] text-[var(--rasi-text)]">
             {outcomes.map((o) => {
-              const hasActual = o.actualPrice !== null && o.status === 'MATURED'
+              const hasActual = o.actualPrice !== null
               return (
                 <tr
                   key={`outcome-${o.horizon}`}
